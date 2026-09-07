@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -32,19 +33,20 @@ public sealed class Blocker
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(20) };
     private readonly HashSet<string> _blockedHosts = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _allowedHosts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _allowedSuffixes = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _genericRules = [];
     private readonly object _sync = new();
-    private bool _refreshStarted;
+    private readonly ConcurrentDictionary<string, bool> _decisionCache = new(StringComparer.OrdinalIgnoreCase);
+    private int _refreshStarted;
+    private int _filtersLoaded;
 
     public Blocker()
     {
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("Orvian-Browser");
-        lock (_sync)
-        {
-            foreach (var host in BootstrapHosts) _blockedHosts.Add(host);
-            _genericRules.AddRange(BuiltInGenericRules);
-        }
-        LoadCachedFilters();
+        foreach (var host in BootstrapHosts) _blockedHosts.Add(host);
+        _genericRules.AddRange(BuiltInGenericRules);
+        // Do not synchronously parse 10–25 MB filter lists during window construction.
+        // The warm-up task loads them off the UI path instead.
     }
 
     public int RuleCount
@@ -54,8 +56,7 @@ public sealed class Blocker
 
     public async Task RefreshFiltersAsync(CancellationToken cancellationToken = default)
     {
-        if (_refreshStarted) return;
-        _refreshStarted = true;
+        if (Interlocked.Exchange(ref _refreshStarted, 1) != 0) return;
         var directory = GetFilterDirectory();
         Directory.CreateDirectory(directory);
 
@@ -65,17 +66,29 @@ public sealed class Blocker
             {
                 var fileName = Path.Combine(directory, MakeSafeFileName(url));
                 var shouldDownload = !File.Exists(fileName) || File.GetLastWriteTimeUtc(fileName) < DateTime.UtcNow.AddHours(-24);
-                if (!shouldDownload) continue;
+                if (shouldDownload)
+                {
+                    using var response = await _http.GetAsync(url, cancellationToken);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                        if (content.Length <= 25_000_000)
+                            await File.WriteAllTextAsync(fileName, content, new UTF8Encoding(false), cancellationToken);
+                    }
+                }
 
-                using var response = await _http.GetAsync(url, cancellationToken);
-                if (!response.IsSuccessStatusCode) continue;
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                if (content.Length > 25_000_000) continue;
-                await File.WriteAllTextAsync(fileName, content, new UTF8Encoding(false), cancellationToken);
-                ParseFilterText(content);
+                if (File.Exists(fileName))
+                {
+                    var content = await File.ReadAllTextAsync(fileName, cancellationToken);
+                    if (content.Length <= 25_000_000)
+                        await Task.Run(() => ParseFilterText(content), cancellationToken);
+                }
             }
             catch { }
         }
+
+        Volatile.Write(ref _filtersLoaded, 1);
+        _decisionCache.Clear();
     }
 
     public bool ShouldBlock(string uri)
@@ -84,15 +97,21 @@ public sealed class Blocker
         var host = NormalizeHost(parsed.Host);
         if (IsLocalOrPrivateHost(host) || IsAllowed(host)) return false;
 
+        if (_decisionCache.TryGetValue(uri, out var cached)) return cached;
+
+        var blocked = false;
         lock (_sync)
         {
-            foreach (var rule in _blockedHosts)
-                if (HostMatches(host, rule)) return true;
-
-            foreach (var rule in _genericRules)
-                if (GenericMatches(uri, rule)) return true;
+            // O(number-of-labels) domain lookup instead of scanning every filter entry.
+            blocked = MatchesBlockedHost(host);
+            if (!blocked && ShouldRunGenericScan(uri))
+                foreach (var rule in _genericRules)
+                    if (GenericMatches(uri, rule)) { blocked = true; break; }
         }
-        return false;
+
+        // Keep the cache bounded so resource-heavy pages cannot grow it forever.
+        if (_decisionCache.Count < 8192) _decisionCache.TryAdd(uri, blocked);
+        return blocked;
     }
 
     public bool IsBlockedHost(string uri)
@@ -100,29 +119,52 @@ public sealed class Blocker
         if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed) || string.IsNullOrWhiteSpace(parsed.Host)) return false;
         var host = NormalizeHost(parsed.Host);
         if (IsLocalOrPrivateHost(host) || IsAllowed(host)) return false;
-        lock (_sync)
-        {
-            foreach (var rule in _blockedHosts)
-                if (HostMatches(host, rule)) return true;
-        }
-        return false;
+        lock (_sync) return MatchesBlockedHost(host);
     }
 
     public void AllowSite(string host)
     {
         var normalized = NormalizeHost(host);
-        if (!string.IsNullOrWhiteSpace(normalized)) _allowedHosts.Add(normalized);
+        if (string.IsNullOrWhiteSpace(normalized)) return;
+        lock (_sync)
+        {
+            _allowedHosts.Add(normalized);
+            _allowedSuffixes.Add(normalized);
+        }
+        _decisionCache.Clear();
     }
 
-    public void RemoveSite(string host) => _allowedHosts.Remove(NormalizeHost(host));
+    public void RemoveSite(string host)
+    {
+        var normalized = NormalizeHost(host);
+        lock (_sync)
+        {
+            _allowedHosts.Remove(normalized);
+            _allowedSuffixes.Remove(normalized);
+        }
+        _decisionCache.Clear();
+    }
 
     public bool IsAllowed(string host)
     {
         var normalized = NormalizeHost(host);
         lock (_sync)
         {
-            foreach (var rule in _allowedHosts)
+            foreach (var rule in _allowedSuffixes)
                 if (normalized == rule || normalized.EndsWith("." + rule, StringComparison.OrdinalIgnoreCase)) return true;
+        }
+        return false;
+    }
+
+    private bool MatchesBlockedHost(string host)
+    {
+        if (_blockedHosts.Contains(host)) return true;
+        var dot = host.IndexOf('.');
+        while (dot >= 0 && dot < host.Length - 1)
+        {
+            var parent = host[(dot + 1)..];
+            if (_blockedHosts.Contains(parent)) return true;
+            dot = host.IndexOf('.', dot + 1);
         }
         return false;
     }
@@ -181,7 +223,7 @@ public sealed class Blocker
                 continue;
             }
 
-            if (!exception && IsUsefulGenericRule(line) && localGeneric.Count < 5000)
+            if (!exception && IsUsefulGenericRule(line) && localGeneric.Count < 1500)
                 localGeneric.Add(line);
         }
 
@@ -192,6 +234,17 @@ public sealed class Blocker
             foreach (var value in localGeneric)
                 if (!_genericRules.Contains(value, StringComparer.OrdinalIgnoreCase)) _genericRules.Add(value);
         }
+    }
+
+    private static bool ShouldRunGenericScan(string uri)
+    {
+        return uri.Contains("/ad", StringComparison.OrdinalIgnoreCase) ||
+               uri.Contains("ads", StringComparison.OrdinalIgnoreCase) ||
+               uri.Contains("advert", StringComparison.OrdinalIgnoreCase) ||
+               uri.Contains("analytics", StringComparison.OrdinalIgnoreCase) ||
+               uri.Contains("tracking", StringComparison.OrdinalIgnoreCase) ||
+               uri.Contains("doubleclick", StringComparison.OrdinalIgnoreCase) ||
+               uri.Contains("pixel", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryParseHostsLine(string line, out string host)
@@ -221,8 +274,6 @@ public sealed class Blocker
                line.Contains("doubleclick", StringComparison.OrdinalIgnoreCase) ||
                line.Contains("tracking", StringComparison.OrdinalIgnoreCase);
     }
-
-    private static bool HostMatches(string host, string rule) => host == rule || host.EndsWith("." + rule, StringComparison.OrdinalIgnoreCase);
 
     private static bool GenericMatches(string uri, string rule)
     {
