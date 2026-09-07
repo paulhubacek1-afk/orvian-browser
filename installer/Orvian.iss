@@ -4,7 +4,7 @@
 #define MyAppExeName "Orvian.exe"
 
 [Setup]
-AppId={{8B4E3B4A-4A4E-4ED5-8C6D-ORVIAN000001}
+AppId={{8B4E3B4A-4A4E-4ED5-8C6D-7F2B9A3D1001}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
