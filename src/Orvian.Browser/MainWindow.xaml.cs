@@ -237,7 +237,6 @@ public partial class MainWindow : Window
                 options: new CoreWebView2EnvironmentOptions());
 
             _browserReady = true;
-            PrivacyButton.ToolTip = "Datenschutz-Center";
 
             await AddTabAsync(select: true, initialUri: null);
             _panda?.Play(PandaMood.Success);
@@ -661,10 +660,10 @@ public partial class MainWindow : Window
             if (TabFor(sender)?.View.CoreWebView2 is { } core)
             {
                 e.Response = core.Environment.CreateWebResourceResponse(
-                    content: null,
-                    statusCode: 403,
-                    reasonPhrase: "Blocked by Orvian",
-                    headers: "Content-Type: text/plain; charset=utf-8");
+                    null,
+                    403,
+                    "Blocked by Orvian",
+                    "Content-Type: text/plain; charset=utf-8");
             }
         }
         catch
