@@ -4,7 +4,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
-using System.Windows.Threading;
 
 namespace Orvian.Browser;
 
@@ -15,13 +14,14 @@ public partial class MainWindow
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        WindowStyle = WindowStyle.None;
+        WindowStyle = System.Windows.WindowStyle.None;
         ResizeMode = ResizeMode.CanResize;
         UseLayoutRounding = true;
         SnapsToDevicePixels = true;
 
         Chrome.PreviewMouseLeftButtonDown += ChromeTitleBar_MouseLeftButtonDown;
         Loaded += ImprovedUi_Loaded;
+        ReplaceWelcomePanda();
     }
 
     private void ChromeTitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -89,7 +89,6 @@ public partial class MainWindow
 
         var overlay = new Grid
         {
-            Name = "PostUpdateOverlay",
             Background = new SolidColorBrush(Color.FromArgb(232, 244, 248, 253)),
             Opacity = 0
         };
@@ -98,7 +97,6 @@ public partial class MainWindow
         var card = new Border
         {
             Width = 820,
-            MaxWidth = 900,
             Padding = new Thickness(42, 34, 42, 28),
             CornerRadius = new CornerRadius(30),
             BorderThickness = new Thickness(1),
@@ -150,8 +148,7 @@ public partial class MainWindow
             Text = "ORVIAN HAT SICH AKTUALISIERT",
             FontSize = 12,
             FontWeight = FontWeights.Bold,
-            Foreground = new SolidColorBrush(Color.FromRgb(65, 127, 220)),
-            LetterSpacing = 1.6
+            Foreground = new SolidColorBrush(Color.FromRgb(65, 127, 220))
         });
         content.Children.Add(new TextBlock
         {
@@ -170,10 +167,10 @@ public partial class MainWindow
         });
 
         var featurePanel = new StackPanel { Margin = new Thickness(0, 0, 0, 22) };
-        AddUpdateFeature(featurePanel, "✨", "Mehr Animationen", "Panda-Reaktionen mit Bounce, Blicken, Blinzeln und weichen Übergängen.");
-        AddUpdateFeature(featurePanel, "⚡", "Modernere Oberfläche", "Saubere eigene Fensterleiste, weniger Chrome-Rauschen und weichere Bedienelemente.");
-        AddUpdateFeature(featurePanel, "🧭", "Browser-Werkzeuge", "New Tab, Command Palette, Verlauf, Lesezeichen, Downloads und Datenschutz-Center.");
-        AddUpdateFeature(featurePanel, "🛡", "Mehr Schutz", "Netzwerkfilter, Berechtigungen und lokale Datenschutzfunktionen bleiben aktiv.");
+        AddUpdateFeature(featurePanel, "✨", "Mehr Panda-Animationen", "Blinzeln, Blickbewegungen, Bounce und weiche Übergänge.");
+        AddUpdateFeature(featurePanel, "⚡", "Modernere Oberfläche", "Eigene Fensterleiste ohne doppelte Windows-Schaltflächen.");
+        AddUpdateFeature(featurePanel, "🧭", "Mehr Browser-Werkzeuge", "New Tab, Command Palette, Verlauf, Lesezeichen und Downloads.");
+        AddUpdateFeature(featurePanel, "🛡", "Mehr Schutz", "Datenschutz-Center, Berechtigungen und Netzwerkfilter.");
         content.Children.Add(featurePanel);
 
         var footer = new DockPanel { LastChildFill = false };
@@ -200,6 +197,7 @@ public partial class MainWindow
         footer.Children.Add(continueButton);
         content.Children.Add(footer);
 
+        overlay.Children.Add(card);
         root.Children.Add(overlay);
         panda.Play(PandaMood.Success);
 
@@ -212,12 +210,13 @@ public partial class MainWindow
         var cardTransform = new ScaleTransform(0.90, 0.90);
         card.RenderTransform = cardTransform;
         card.RenderTransformOrigin = new Point(0.5, 0.5);
-        var cardScaleX = new DoubleAnimation(0.90, 1, TimeSpan.FromMilliseconds(520)) { EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.18 } };
+        var cardScaleX = new DoubleAnimation(0.90, 1, TimeSpan.FromMilliseconds(520))
+        {
+            EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.18 }
+        };
         var cardScaleY = cardScaleX.Clone();
         cardTransform.BeginAnimation(ScaleTransform.ScaleXProperty, cardScaleX);
         cardTransform.BeginAnimation(ScaleTransform.ScaleYProperty, cardScaleY);
-
-        overlay.Children.Add(card);
     }
 
     private static void AddUpdateFeature(Panel panel, string icon, string title, string description)
@@ -283,6 +282,75 @@ public partial class MainWindow
             OpenNewTabPage();
         };
         overlay.BeginAnimation(OpacityProperty, fade);
+    }
+
+    private void ReplaceWelcomePanda()
+    {
+        var canvas = FindDescendant<Canvas>(WelcomeOverlay);
+        if (canvas == null) return;
+        canvas.Children.Clear();
+
+        var dark = new SolidColorBrush(Color.FromRgb(53, 60, 72));
+        var soft = new SolidColorBrush(Color.FromRgb(232, 237, 243));
+        var blush = new SolidColorBrush(Color.FromRgb(255, 183, 194));
+        var blue = new SolidColorBrush(Color.FromRgb(65, 143, 255));
+
+        AddEllipse(canvas, 42, 151, 105, 15, new SolidColorBrush(Color.FromArgb(35, 30, 45, 65)));
+        AddEllipse(canvas, 35, 22, 50, 50, soft);
+        AddEllipse(canvas, 105, 22, 50, 50, soft);
+        AddEllipse(canvas, 16, 42, 138, 116, dark);
+        AddEllipse(canvas, 29, 54, 112, 96, Brushes.White);
+        AddEllipse(canvas, 45, 73, 38, 50, dark, -18);
+        AddEllipse(canvas, 89, 73, 38, 50, dark, 18);
+        var leftEye = AddEllipse(canvas, 57, 84, 20, 25, Brushes.White);
+        var rightEye = AddEllipse(canvas, 97, 84, 20, 25, Brushes.White);
+        AddEllipse(canvas, 63, 91, 8, 11, dark);
+        AddEllipse(canvas, 103, 91, 8, 11, dark);
+        AddEllipse(canvas, 72, 113, 26, 18, dark);
+        var smile = new Path
+        {
+            Stroke = dark,
+            StrokeThickness = 3.2,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            Data = Geometry.Parse("M 72,124 Q 85,135 98,124")
+        };
+        canvas.Children.Add(smile);
+        AddEllipse(canvas, 35, 119, 16, 8, blush, opacity: 0.5);
+        AddEllipse(canvas, 119, 119, 16, 8, blush, opacity: 0.5);
+        AddEllipse(canvas, 42, 145, 38, 15, Brushes.White);
+        AddEllipse(canvas, 102, 145, 38, 15, Brushes.White);
+        AddEllipse(canvas, 69, 141, 42, 13, blue);
+    }
+
+    private static Ellipse AddEllipse(Canvas canvas, double left, double top, double width, double height, Brush fill, double angle = 0, double opacity = 1)
+    {
+        var shape = new Ellipse
+        {
+            Width = width,
+            Height = height,
+            Fill = fill,
+            Opacity = opacity,
+            RenderTransformOrigin = new Point(0.5, 0.5)
+        };
+        if (Math.Abs(angle) > 0.01) shape.RenderTransform = new RotateTransform(angle);
+        Canvas.SetLeft(shape, left);
+        Canvas.SetTop(shape, top);
+        canvas.Children.Add(shape);
+        return shape;
+    }
+
+    private static T? FindDescendant<T>(DependencyObject? root) where T : DependencyObject
+    {
+        if (root == null) return null;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T match) return match;
+            var nested = FindDescendant<T>(child);
+            if (nested != null) return nested;
+        }
+        return null;
     }
 
     private static T? FindParent<T>(DependencyObject? current) where T : DependencyObject
