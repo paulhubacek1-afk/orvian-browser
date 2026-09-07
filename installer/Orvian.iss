@@ -1,6 +1,6 @@
 #define MyAppName "Orvian Browser"
 #ifndef MyAppVersion
-#define MyAppVersion "0.2.1"
+#define MyAppVersion "1.0.0"
 #endif
 #define MyAppPublisher "Orvian Project"
 #define MyAppExeName "Orvian.exe"
@@ -17,7 +17,7 @@ OutputDir=..\dist
 OutputBaseFilename=Orvian-Browser-Setup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern
 DisableWelcomePage=no
 DisableProgramGroupPage=yes
