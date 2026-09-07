@@ -1,3 +1,4 @@
+using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -13,25 +14,51 @@ public sealed class PasswordVault
 
     public void Save(SavedCredential credential)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
+        var directory = Path.GetDirectoryName(_file);
+        if (string.IsNullOrWhiteSpace(directory))
+            throw new InvalidOperationException("Der Passwort-Tresorpfad konnte nicht ermittelt werden.");
+
+        Directory.CreateDirectory(directory);
+
         var plain = JsonSerializer.SerializeToUtf8Bytes(credential);
-        var protectedBytes = ProtectedData.Protect(plain, null, DataProtectionScope.CurrentUser);
-        CryptographicOperations.ZeroMemory(plain);
-        File.WriteAllBytes(_file, protectedBytes);
+        try
+        {
+            var protectedBytes = ProtectedData.Protect(plain, null, DataProtectionScope.CurrentUser);
+            try
+            {
+                File.WriteAllBytes(_file, protectedBytes);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(protectedBytes);
+            }
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(plain);
+        }
     }
 
     public SavedCredential? Load()
     {
         if (!File.Exists(_file)) return null;
+
         var protectedBytes = File.ReadAllBytes(_file);
-        var plain = ProtectedData.Unprotect(protectedBytes, null, DataProtectionScope.CurrentUser);
         try
         {
-            return JsonSerializer.Deserialize<SavedCredential>(plain);
+            var plain = ProtectedData.Unprotect(protectedBytes, null, DataProtectionScope.CurrentUser);
+            try
+            {
+                return JsonSerializer.Deserialize<SavedCredential>(plain);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(plain);
+            }
         }
         finally
         {
-            CryptographicOperations.ZeroMemory(plain);
+            CryptographicOperations.ZeroMemory(protectedBytes);
         }
     }
 }
