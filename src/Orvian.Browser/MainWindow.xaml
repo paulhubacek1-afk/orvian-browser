@@ -4,102 +4,58 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="Orvian Browser" Width="1440" Height="900" MinWidth="1050" MinHeight="680"
         Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
-        WindowStartupLocation="CenterScreen"
-        WindowChrome.WindowChrome="{x:Null}">
+        WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <Storyboard x:Key="TopAppear">
-            <DoubleAnimation Storyboard.TargetName="TopChrome" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.32" EasingFunction="{StaticResource EaseOut}"/>
-            <DoubleAnimation Storyboard.TargetName="TopChrome" Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="-12" To="0" Duration="0:0:0.42" EasingFunction="{StaticResource EaseOut}"/>
-        </Storyboard>
-        <Storyboard x:Key="ContentAppear">
-            <DoubleAnimation Storyboard.TargetName="ContentShell" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.36" EasingFunction="{StaticResource EaseOut}"/>
-            <DoubleAnimation Storyboard.TargetName="ContentShell" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" From="0.985" To="1" Duration="0:0:0.4" EasingFunction="{StaticResource EaseOut}"/>
-            <DoubleAnimation Storyboard.TargetName="ContentShell" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" From="0.985" To="1" Duration="0:0:0.4" EasingFunction="{StaticResource EaseOut}"/>
+        <Storyboard x:Key="Intro">
+            <DoubleAnimation Storyboard.TargetName="Chrome" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.28"/>
+            <DoubleAnimation Storyboard.TargetName="Page" Storyboard.TargetProperty="Opacity" From="0" To="1" BeginTime="0:0:0.08" Duration="0:0:0.32"/>
         </Storyboard>
     </Window.Resources>
-
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="44"/>
-            <RowDefinition Height="64"/>
-            <RowDefinition Height="34"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="46"/><RowDefinition Height="66"/><RowDefinition Height="34"/><RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-
-        <Border x:Name="TopChrome" Grid.Row="0" Background="{StaticResource TabBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
-                RenderTransformOrigin="0.5,0.5">
-            <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="10,0,0,0">
-                    <Border x:Name="Tab1" Width="255" Height="38" Margin="0,0,4,0" Padding="10,0"
-                            Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,1,1,0"
-                            CornerRadius="13,13,0,0" MouseLeftButtonDown="Tab_Click">
+        <Border x:Name="Chrome" Grid.Row="0" Background="{StaticResource TabBarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Opacity="0">
+            <Grid Margin="10,0,8,0">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
+                    <Border Width="260" Height="40" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,1,1,0" CornerRadius="14,14,0,0" Padding="10,0" MouseLeftButtonDown="Tab_Click">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="30"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Width="20" Height="20" CornerRadius="10" Background="{StaticResource AccentBrush}" VerticalAlignment="Center">
-                                <TextBlock Text="O" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <TextBlock x:Name="TabTitle" Grid.Column="1" Text="Neuer Tab" Margin="8,0,4,0" VerticalAlignment="Center" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
-                            <Button Grid.Column="2" Content="×" Width="28" Height="28" Padding="0" Click="CloseTab_Click" Foreground="{StaticResource MutedBrush}"/>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition Width="*"/><ColumnDefinition Width="30"/></Grid.ColumnDefinitions>
+                            <Border Width="20" Height="20" CornerRadius="10" Background="{StaticResource AccentBrush}" VerticalAlignment="Center"><TextBlock Text="O" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                            <TextBlock x:Name="TabTitle" Grid.Column="1" Text="Neuer Tab" Margin="8,0,4,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <Button Grid.Column="2" Content="×" Width="28" Height="28" Padding="0" Click="CloseTab_Click"/>
                         </Grid>
                     </Border>
-                    <Button Content="+" Width="38" Height="32" Margin="4,0,0,4" FontSize="22" Foreground="{StaticResource MutedBrush}" Click="NewTab_Click" ToolTip="Neuer Tab"/>
+                    <Button Content="+" Width="38" Height="32" Margin="6,0,0,4" FontSize="22" Click="NewTab_Click" ToolTip="Neuer Tab"/>
                 </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,4">
-                    <Button Content="—" Width="36" Height="30" Padding="0" Click="Minimize_Click" ToolTip="Minimieren"/>
-                    <Button Content="□" Width="36" Height="30" Padding="0" Click="Maximize_Click" ToolTip="Maximieren"/>
-                    <Button Content="×" Width="36" Height="30" Padding="0" Foreground="{StaticResource DangerBrush}" Click="CloseWindow_Click" ToolTip="Schließen"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="—" Width="36" Height="30" Padding="0" Click="Minimize_Click"/>
+                    <Button Content="□" Width="36" Height="30" Padding="0" Click="Maximize_Click"/>
+                    <Button Content="×" Width="36" Height="30" Padding="0" Foreground="{StaticResource DangerBrush}" Click="CloseWindow_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Background="{StaticResource ToolbarBrush}" Padding="12,9" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" Background="{StaticResource ToolbarBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="176"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="122"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="176"/><ColumnDefinition Width="*"/><ColumnDefinition Width="92"/></Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Button x:Name="BackButton" Style="{StaticResource ToolbarButton}" Content="‹" Click="Back_Click" ToolTip="Zurück"/>
                     <Button x:Name="ForwardButton" Style="{StaticResource ToolbarButton}" Content="›" Click="Forward_Click" ToolTip="Vorwärts"/>
                     <Button Style="{StaticResource ToolbarButton}" Content="↻" Click="Reload_Click" ToolTip="Neu laden"/>
                     <Button Style="{StaticResource ToolbarButton}" Content="⌂" Click="Home_Click" ToolTip="Startseite"/>
                 </StackPanel>
-
-                <Border Grid.Column="1" Height="44" CornerRadius="22" Background="#F7F9FC" BorderBrush="#D8DFEA" BorderThickness="1" VerticalAlignment="Center">
-                    <Border.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1"/></Border.RenderTransform>
-                    <Border.Triggers>
-                        <EventTrigger RoutedEvent="MouseEnter">
-                            <BeginStoryboard><Storyboard><ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="#A9BCF5" Duration="0:0:0.16"/></Storyboard></BeginStoryboard>
-                        </EventTrigger>
-                    </Border.Triggers>
+                <Border x:Name="Omnibox" Grid.Column="1" Height="44" CornerRadius="22" Background="#F7F9FC" BorderBrush="#D8DFEA" BorderThickness="1" VerticalAlignment="Center">
                     <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="38"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="38"/>
-                        </Grid.ColumnDefinitions>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="38"/><ColumnDefinition Width="*"/><ColumnDefinition Width="38"/></Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="⌕" FontSize="19" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <TextBox x:Name="AddressBox" Grid.Column="1" BorderThickness="0" Background="Transparent" FontSize="15" Padding="0" VerticalContentAlignment="Center"
-                                 KeyDown="AddressBox_KeyDown" ToolTip="Adresse eingeben oder suchen"/>
-                        <Button Grid.Column="2" Content="☆" Width="30" Height="30" Padding="0" Foreground="{StaticResource MutedBrush}" ToolTip="Lesezeichen" Click="Bookmark_Click"/>
+                        <TextBox x:Name="AddressBox" Grid.Column="1" BorderThickness="0" Background="Transparent" FontSize="15" Padding="0" VerticalContentAlignment="Center" KeyDown="AddressBox_KeyDown"/>
+                        <Button Grid.Column="2" Content="☆" Width="30" Height="30" Padding="0" Foreground="{StaticResource MutedBrush}" Click="Bookmark_Click" ToolTip="Lesezeichen"/>
                     </Grid>
                 </Border>
-
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="◉" Width="38" Height="38" Margin="0,0,2,0" Foreground="{StaticResource AccentBrush}" ToolTip="Datenschutz" Click="Privacy_Click"/>
+                    <Button Content="◉" Width="38" Height="38" Foreground="{StaticResource AccentBrush}" Click="Privacy_Click" ToolTip="Datenschutz"/>
                     <Button Content="⋮" Width="40" Height="38" FontSize="22" Click="Menu_Click" ToolTip="Menü"/>
                 </StackPanel>
             </Grid>
@@ -109,26 +65,22 @@
             <DockPanel LastChildFill="False">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Ellipse Width="8" Height="8" Fill="{StaticResource SuccessBrush}" Margin="0,0,8,0"/>
-                    <TextBlock x:Name="PrivacyStats" Text="Orvian schützt deine Sitzung" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" FontSize="12.5"/>
+                    <TextBlock x:Name="PrivacyStats" Text="Orvian schützt deine Sitzung" Foreground="{StaticResource MutedBrush}" FontSize="12.5"/>
                 </StackPanel>
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Content="Website als App" Height="28" Padding="10,3" Margin="0,0,6,0" Click="InstallApp_Click"/>
                     <Button Content="Passwort prüfen" Height="28" Padding="10,3" Click="CheckPassword_Click"/>
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <Grid x:Name="ContentShell" Grid.Row="3" Margin="0" Opacity="0" RenderTransformOrigin="0.5,0.5">
-            <Grid.RenderTransform><ScaleTransform/></Grid.RenderTransform>
+        <Grid x:Name="Page" Grid.Row="3" Opacity="0">
             <wv2:WebView2 x:Name="BrowserView"/>
-
             <Border x:Name="LockOverlay" Background="#EAF5F8FF" Visibility="Collapsed">
                 <Border Width="430" Padding="34" Background="White" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="24" HorizontalAlignment="Center" VerticalAlignment="Center" Effect="{StaticResource CardShadow}">
                     <StackPanel>
-                        <Border Width="72" Height="72" CornerRadius="36" Background="{StaticResource AccentSoftBrush}" HorizontalAlignment="Center" Margin="0,0,0,18">
-                            <TextBlock Text="⌑" FontSize="34" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock Text="Orvian ist gesperrt" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <Border Width="72" Height="72" CornerRadius="36" Background="{StaticResource AccentSoftBrush}" HorizontalAlignment="Center"><TextBlock Text="⌑" FontSize="34" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                        <TextBlock Text="Orvian ist gesperrt" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,18,0,0"/>
                         <TextBlock Text="Alt+D zum Entsperren" Margin="0,8,0,22" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center"/>
                         <PasswordBox x:Name="UnlockBox" Height="42" Padding="12"/>
                         <Button Content="Entsperren" Height="42" Margin="0,12,0,0" Click="Unlock_Click" Style="{StaticResource PrimaryButton}"/>
