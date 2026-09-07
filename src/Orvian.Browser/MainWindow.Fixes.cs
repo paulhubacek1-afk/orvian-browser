@@ -11,6 +11,7 @@ public partial class MainWindow
     private DispatcherTimer? _tabSafetyTimer;
     private bool _uiFixInitialized;
     private bool _tabSyncQueued;
+    private bool _manualUpdateCheckRunning;
 
     static MainWindow()
     {
@@ -37,8 +38,8 @@ public partial class MainWindow
         Closed += OnUiFixWindowClosed;
 
         // The old implementation woke the UI every 250 ms. That was wasteful and
-        // still allowed races while WebView2 was creating a tab. Keep a very small
-        // safety net at 2 s, while normal tab actions are synchronized immediately.
+        // still allowed races while WebView2 was creating a tab. Keep a small
+        // 2-second safety net; normal user actions reconcile immediately.
         _tabSafetyTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromSeconds(2)
@@ -59,20 +60,17 @@ public partial class MainWindow
 
     private void OnMainWindowMouseDown(object sender, MouseButtonEventArgs e)
     {
-        // New-tab, tab-close and tab-select buttons are routed through the window.
-        // Queue one reconciliation after WPF has finished the click handler.
-        if (e.OriginalSource is DependencyObject source &&
-            FindVisualParent<Button>(source) is Button button &&
-            (ReferenceEquals(button, NewTabButton) || IsTabButton(button)))
-        {
+        if (e.OriginalSource is not DependencyObject source) return;
+        var button = FindVisualParent<Button>(source);
+        if (button == null) return;
+
+        if (ReferenceEquals(button, NewTabButton) || IsTabButton(button))
             QueueTabReconcile();
-        }
     }
 
     private bool IsTabButton(Button button)
     {
         if (ReferenceEquals(button, NewTabButton)) return true;
-        if (button.Tag is null) return false;
         return _tabs.Any(tab => ReferenceEquals(tab.HeaderButton, button));
     }
 
@@ -167,6 +165,13 @@ public partial class MainWindow
 
     private void ChromiumLikeShortcuts(object sender, KeyEventArgs e)
     {
+        if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.U)
+        {
+            _ = ManualUpdateCheckAsync();
+            e.Handled = true;
+            return;
+        }
+
         if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.Tab)
         {
             SelectAdjacentTab(-1);
@@ -206,6 +211,45 @@ public partial class MainWindow
         {
             SelectTabAt(_tabs.Count - 1);
             e.Handled = true;
+        }
+    }
+
+    private async Task ManualUpdateCheckAsync()
+    {
+        if (_manualUpdateCheckRunning || _locked) return;
+        _manualUpdateCheckRunning = true;
+        _panda?.Play(PandaMood.Thinking);
+
+        try
+        {
+            var update = await _updateChecker.GetLatestAsync();
+            if (update != null && update.Version > _updateChecker.CurrentVersion)
+            {
+                _pendingUpdate = update;
+                if (!_welcomeVisible)
+                    ShowPendingUpdate();
+                return;
+            }
+
+            _panda?.Play(PandaMood.Success);
+            MessageBox.Show(
+                $"Orvian ist aktuell.\n\nInstalliert: v{_updateChecker.CurrentVersion}\nGeprüft gegen: GitHub Releases + VERSION.txt",
+                "Orvian – Updates",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            _panda?.Play(PandaMood.Error);
+            MessageBox.Show(
+                "Die Update-Prüfung konnte nicht abgeschlossen werden.\n\n" + ex.Message,
+                "Orvian – Update-Prüfung",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        finally
+        {
+            _manualUpdateCheckRunning = false;
         }
     }
 
