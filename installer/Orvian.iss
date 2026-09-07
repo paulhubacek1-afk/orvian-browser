@@ -1,6 +1,6 @@
 #define MyAppName "Orvian Browser"
 #ifndef MyAppVersion
-#define MyAppVersion "0.1.2"
+#define MyAppVersion "0.2.0"
 #endif
 #define MyAppPublisher "Orvian Project"
 #define MyAppExeName "Orvian.exe"
@@ -44,8 +44,25 @@ var
   MaintenanceAction: Integer;
 
 function ExistingInstallation: Boolean;
+var
+  DefaultInstallRoot: String;
 begin
-  Result := FileExists(ExpandConstant('{app}\{#MyAppExeName}')) or FileExists(ExpandConstant('{app}\unins000.exe'));
+  { {app} is not safe during the early wizard lifecycle. Use the default
+    installation directory while the maintenance page is being initialized. }
+  DefaultInstallRoot := AddBackslash(ExpandConstant('{autopf}')) + 'Orvian Browser';
+  Result := FileExists(AddBackslash(DefaultInstallRoot) + '{#MyAppExeName}') or
+            FileExists(AddBackslash(DefaultInstallRoot) + 'unins000.exe');
+end;
+
+procedure WritePostUpdateMarker;
+var
+  MarkerDir: String;
+  MarkerFile: String;
+begin
+  MarkerDir := AddBackslash(ExpandConstant('{localappdata}')) + 'Orvian';
+  ForceDirectories(MarkerDir);
+  MarkerFile := AddBackslash(MarkerDir) + 'post-update.txt';
+  SaveStringToFile(MarkerFile, '{#MyAppVersion}', False);
 end;
 
 procedure InitializeWizard;
@@ -87,7 +104,7 @@ begin
     MaintenanceAction := MaintenancePage.SelectedValueIndex;
     if MaintenanceAction = 2 then
     begin
-      Uninstaller := ExpandConstant('{app}\unins000.exe');
+      Uninstaller := AddBackslash(ExpandConstant('{autopf}')) + 'Orvian Browser\unins000.exe';
       if FileExists(Uninstaller) then
       begin
         if MsgBox('Orvian wird jetzt deinstalliert. Möchtest du fortfahren?', mbConfirmation, MB_YESNO) = IDYES then
@@ -97,10 +114,16 @@ begin
         end;
       end
       else
-        MsgBox('Der Orvian-Deinstaller wurde nicht gefunden. Bitte installiere Orvian zuerst erneut, um die Installation zu reparieren.', mbError, MB_OK);
+        MsgBox('Der Orvian-Deinstaller wurde nicht gefunden. Bitte installiere Orvian erneut, um die Installation zu reparieren.', mbError, MB_OK);
       Result := False;
     end;
   end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if (CurStep = ssPostInstall) and (MaintenanceAction = 1) and ExistingInstallation then
+    WritePostUpdateMarker;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
@@ -113,6 +136,7 @@ begin
       'Entwicklerkontakt: paul.hubacek1@gmail.com'
   else if Assigned(MaintenancePage) and (MaintenancePage.SelectedValueIndex = 1) then
     WizardForm.WelcomeLabel2.Caption := 'Update: Die neue Orvian-Version wird über die bestehende Installation installiert.' + #13#10 +
+      'Nach dem Update zeigt Orvian eine neue Update-Begrüßung.' + #13#10 +
       'Entwicklerkontakt: paul.hubacek1@gmail.com'
   else if Assigned(MaintenancePage) and (MaintenancePage.SelectedValueIndex = 2) then
     WizardForm.WelcomeLabel2.Caption := 'Deinstallation: Orvian und seine Installation werden entfernt.' + #13#10 +
