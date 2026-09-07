@@ -70,13 +70,12 @@ public partial class MainWindow
     {
         try
         {
-            var plus = FindDescendant<Button>(Chrome, b => Equals(b.Content?.ToString(), "+"));
+            var plus = FindVisual<Button>(Chrome, b => Equals(b.Content?.ToString(), "+"));
             var strip = plus is null ? null : FindParent<StackPanel>(plus);
             if (strip is null) return;
 
             strip.Children.Clear();
-            var add = CreateNewTabButton();
-            strip.Children.Add(add);
+            strip.Children.Add(CreateNewTabButton());
         }
         catch { }
     }
@@ -96,8 +95,7 @@ public partial class MainWindow
         _managedTabs.Add(tab);
         _activeManagedTab = tab;
         BrowserView.Visibility = Visibility.Visible;
-        AttachManagedTab(tab, existingCoreEvents: true);
-        UpdateManagedTabVisual(tab);
+        UpdateManagedTabBar();
     }
 
     private Button CreateNewTabButton()
@@ -119,30 +117,27 @@ public partial class MainWindow
         return button;
     }
 
-    private void AttachManagedTab(OrvianTab tab, bool existingCoreEvents = false)
+    private void AttachManagedTab(OrvianTab tab)
     {
         var core = tab.View.CoreWebView2;
         if (core is null) return;
 
-        if (!existingCoreEvents)
+        core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+        core.WebResourceRequested += (_, e) =>
         {
-            core.WebResourceRequested += (_, e) =>
+            try
             {
-                try
-                {
-                    if (_blocker.ShouldBlock(e.Request.Uri))
-                        e.Response = core.Environment.CreateWebResourceResponse(null, 403, "Blocked by Orvian", "Content-Type: text/plain");
-                }
-                catch { }
-            };
-
-            core.NavigationStarting += (_, e) => ManagedNavigationStarting(tab, e);
-            core.NavigationCompleted += (_, e) => ManagedNavigationCompleted(tab, e);
-            core.NewWindowRequested += (_, e) => ManagedNewWindowRequested(tab, e);
-            core.WebMessageReceived += (_, e) => ManagedWebMessageReceived(tab, e);
-            core.DownloadStarting += (_, e) => ManagedDownloadStarting(tab, e);
-            core.PermissionRequested += (_, e) => ManagedPermissionRequested(tab, e);
-        }
+                if (_blocker.ShouldBlock(e.Request.Uri))
+                    e.Response = core.Environment.CreateWebResourceResponse(null, 403, "Blocked by Orvian", "Content-Type: text/plain");
+            }
+            catch { }
+        };
+        core.NavigationStarting += (_, e) => ManagedNavigationStarting(tab, e);
+        core.NavigationCompleted += (_, e) => ManagedNavigationCompleted(tab, e);
+        core.NewWindowRequested += (_, e) => ManagedNewWindowRequested(tab, e);
+        core.WebMessageReceived += (_, e) => ManagedWebMessageReceived(tab, e);
+        core.DownloadStarting += (_, e) => ManagedDownloadStarting(tab, e);
+        core.PermissionRequested += (_, e) => ManagedPermissionRequested(tab, e);
     }
 
     private void ManagedNavigationStarting(OrvianTab tab, CoreWebView2NavigationStartingEventArgs e)
@@ -176,7 +171,7 @@ public partial class MainWindow
             if (ReferenceEquals(tab, _activeManagedTab))
             {
                 BrowserView = tab.View;
-                await NavigationCompleted(tab.View, e);
+                NavigationCompleted(tab.View, e);
             }
 
             if (e.IsSuccess && tab.View.CoreWebView2 != null &&
@@ -201,27 +196,26 @@ public partial class MainWindow
     private async void ManagedWebMessageReceived(OrvianTab tab, CoreWebView2WebMessageReceivedEventArgs e)
     {
         if (!ReferenceEquals(tab, _activeManagedTab)) return;
-        await WebMessageReceived(tab.View.CoreWebView2, e);
+        WebMessageReceived(tab.View.CoreWebView2, e);
+        await Task.CompletedTask;
     }
 
     private void ManagedDownloadStarting(OrvianTab tab, CoreWebView2DownloadStartingEventArgs e)
     {
-        if (ReferenceEquals(tab, _activeManagedTab))
-            DownloadStarting(tab.View.CoreWebView2, e);
+        if (ReferenceEquals(tab, _activeManagedTab)) DownloadStarting(tab.View.CoreWebView2, e);
     }
 
-    private async void ManagedPermissionRequested(OrvianTab tab, CoreWebView2PermissionRequestedEventArgs e)
+    private void ManagedPermissionRequested(OrvianTab tab, CoreWebView2PermissionRequestedEventArgs e)
     {
         if (ReferenceEquals(tab, _activeManagedTab))
             PermissionRequested(tab.View.CoreWebView2, e);
         else
             e.State = CoreWebView2PermissionState.Deny;
-        await Task.CompletedTask;
     }
 
     private async Task OpenManagedTabAsync()
     {
-        if (!_tabManagerInitialized || _browserReady == false || BrowserView.CoreWebView2?.Environment is not { } environment)
+        if (!_tabManagerInitialized || !_browserReady || BrowserView.CoreWebView2?.Environment is not { } environment)
         {
             OpenNewTabPage();
             return;
@@ -239,6 +233,10 @@ public partial class MainWindow
             Panel.SetZIndex(view, 0);
             Page.Children.Add(view);
             await view.EnsureCoreWebView2Async(environment);
+            view.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
+            view.CoreWebView2.Settings.AreDevToolsEnabled = true;
+            view.CoreWebView2.Settings.IsZoomControlEnabled = true;
+            view.CoreWebView2.Settings.IsStatusBarEnabled = false;
 
             var tab = new OrvianTab { View = view };
             _managedTabs.Add(tab);
@@ -283,19 +281,22 @@ public partial class MainWindow
     {
         if (_managedTabs.Count <= 1)
         {
+            tab.Title = "Neuer Tab";
+            tab.Address = NewTabAddress;
             tab.View.CoreWebView2?.NavigateToString(NewTabHtml);
             await SwitchManagedTabAsync(tab, animate: true);
+            _panda?.Play(PandaMood.Happy);
             return;
         }
 
         var index = _managedTabs.IndexOf(tab);
         var replacement = _managedTabs[Math.Max(0, index - 1)];
-        if (ReferenceEquals(tab, _activeManagedTab))
-            await SwitchManagedTabAsync(replacement, animate: true);
+        if (ReferenceEquals(tab, _activeManagedTab)) await SwitchManagedTabAsync(replacement, animate: true);
 
         _managedTabs.Remove(tab);
         try { Page.Children.Remove(tab.View); } catch { }
         try { tab.View.Dispose(); } catch { }
+        if (tab.Visual?.Parent is Panel parent) parent.Children.Remove(tab.Visual);
         UpdateManagedTabBar();
         _panda?.Play(PandaMood.Happy);
     }
@@ -310,8 +311,8 @@ public partial class MainWindow
         {
             Width = 210,
             Height = 41,
-            Background = new SolidColorBrush(Color.FromRgb(255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(211, 222, 235)),
+            Background = new SolidColorBrush(Color.FromRgb(239, 244, 250)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(213, 222, 233)),
             BorderThickness = new Thickness(1, 1, 1, 0),
             CornerRadius = new CornerRadius(14, 14, 0, 0),
             Padding = new Thickness(8, 0, 7, 0),
@@ -346,7 +347,8 @@ public partial class MainWindow
             FontSize = 12.5,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            Margin = new Thickness(5, 0, 3, 0)
+            Margin = new Thickness(5, 0, 3, 0),
+            Tag = tab
         };
         Grid.SetColumn(title, 1);
         grid.Children.Add(title);
@@ -382,15 +384,12 @@ public partial class MainWindow
     private void UpdateManagedTabVisual(OrvianTab tab)
     {
         if (tab.Visual?.Child is not Grid grid) return;
-        if (grid.Children.OfType<TextBlock>().FirstOrDefault() is { } title)
-            title.Text = string.IsNullOrWhiteSpace(tab.Title) ? "Neuer Tab" : tab.Title;
+        var title = grid.Children.OfType<TextBlock>().FirstOrDefault(x => ReferenceEquals(x.Tag, tab));
+        if (title != null) title.Text = string.IsNullOrWhiteSpace(tab.Title) ? "Neuer Tab" : tab.Title;
 
         var active = ReferenceEquals(tab, _activeManagedTab);
-        if (tab.Visual != null)
-        {
-            tab.Visual.Background = new SolidColorBrush(active ? Color.FromRgb(255, 255, 255) : Color.FromRgb(239, 244, 250));
-            tab.Visual.BorderBrush = new SolidColorBrush(active ? Color.FromRgb(47, 107, 255) : Color.FromRgb(213, 222, 233));
-        }
+        tab.Visual.Background = new SolidColorBrush(active ? Color.FromRgb(255, 255, 255) : Color.FromRgb(239, 244, 250));
+        tab.Visual.BorderBrush = new SolidColorBrush(active ? Color.FromRgb(47, 107, 255) : Color.FromRgb(213, 222, 233));
     }
 
     private void UpdateManagedTabBar()
@@ -405,7 +404,19 @@ public partial class MainWindow
 
     private StackPanel? GetManagedTabStrip()
     {
-        return FindDescendant<StackPanel>(Chrome, s => s.Children.OfType<Button>().Any(b => Equals(b.Content?.ToString(), "+")));
+        return FindVisual<StackPanel>(Chrome, s => s.Children.OfType<Button>().Any(b => Equals(b.Content?.ToString(), "+")));
+    }
+
+    private static T? FindVisual<T>(DependencyObject root, Func<T, bool> predicate) where T : DependencyObject
+    {
+        if (root is T candidate && predicate(candidate)) return candidate;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            var found = FindVisual(child, predicate);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private void TabManager_PreProcessInput(object? sender, PreProcessInputEventArgs e)
@@ -416,17 +427,14 @@ public partial class MainWindow
         switch (key.Key)
         {
             case Key.T:
-                e.StagingItem.Input = key;
                 key.Handled = true;
                 _ = OpenManagedTabAsync();
                 break;
             case Key.W:
-                e.StagingItem.Input = key;
                 key.Handled = true;
                 if (_activeManagedTab != null) _ = CloseManagedTabAsync(_activeManagedTab);
                 break;
             case Key.Tab:
-                e.StagingItem.Input = key;
                 key.Handled = true;
                 if (_managedTabs.Count > 1)
                 {
