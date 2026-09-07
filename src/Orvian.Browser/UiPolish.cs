@@ -58,7 +58,7 @@ public partial class MainWindow
     private async Task CheckForPostUpdateWelcomeAsync()
     {
         await Task.Delay(160);
-        var marker = Path.Combine(
+        var marker = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Orvian",
             "post-update.txt");
