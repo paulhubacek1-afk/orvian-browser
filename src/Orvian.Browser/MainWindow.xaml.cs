@@ -1,7 +1,6 @@
 using Microsoft.Web.WebView2.Core;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Threading;
 
 namespace Orvian.Browser;
 
@@ -38,9 +37,7 @@ public partial class MainWindow : Window
     private void WebResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
         if (_blocker.ShouldBlock(e.Request.Uri))
-        {
             e.Response = BrowserView.CoreWebView2.Environment.CreateWebResourceResponse(null, 403, "Blocked by Orvian", "Content-Type: text/plain");
-        }
     }
 
     private void NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
@@ -48,7 +45,7 @@ public partial class MainWindow : Window
         if (_blocker.IsBlockedHost(e.Uri))
         {
             e.Cancel = true;
-            Dispatcher.BeginInvoke(() => AddressBox.Text = "orvian://blocked");
+            AddressBox.Text = "orvian://blocked";
         }
     }
 
@@ -62,7 +59,7 @@ public partial class MainWindow : Window
         if (e.Key != Key.Enter) return;
         var value = AddressBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(value)) return;
-        var url = value.Contains(" ") ? "https://www.google.com/search?q=" + Uri.EscapeDataString(value) :
+        var url = value.Contains(' ') ? "https://www.google.com/search?q=" + Uri.EscapeDataString(value) :
             (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? value : "https://" + value);
         BrowserView.CoreWebView2.Navigate(url);
         e.Handled = true;
@@ -71,14 +68,15 @@ public partial class MainWindow : Window
     private void Back_Click(object sender, RoutedEventArgs e) { if (BrowserView.CanGoBack) BrowserView.GoBack(); }
     private void Forward_Click(object sender, RoutedEventArgs e) { if (BrowserView.CanGoForward) BrowserView.GoForward(); }
     private void Reload_Click(object sender, RoutedEventArgs e) { BrowserView.Reload(); }
-    private void Menu_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Einstellungen folgen: Farben, Filter, Shortcuts, Datenschutz und Websites als App.", "Orvian");
-    private void InstallApp_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Web-App-Installation wird in der nächsten Ausbaustufe mit Manifest-Erkennung umgesetzt.", "Orvian");
+    private void Menu_Click(object sender, RoutedEventArgs e) => new SettingsWindow().ShowDialog();
+    private void InstallApp_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Web-App-Installation kommt über Manifest-Erkennung und ein eigenes App-Profil.", "Orvian");
 
     private async void CheckPassword_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new PasswordPrompt();
         if (dialog.ShowDialog() != true) return;
         var result = await PasswordSecurity.CheckPwnedAsync(dialog.Password);
+        dialog.Close();
         MessageBox.Show(result, "Orvian Passwortschutz");
     }
 
@@ -98,6 +96,7 @@ public partial class MainWindow : Window
 
     private void LockBrowser()
     {
+        if (_locked) return;
         _locked = true;
         BrowserView.Visibility = Visibility.Hidden;
         LockOverlay.Visibility = Visibility.Visible;
@@ -115,7 +114,7 @@ public partial class MainWindow : Window
 
     private void Unlock_Click(object sender, RoutedEventArgs e)
     {
-        // First implementation: local UI lock. Replace with the configured vault PIN/password verifier.
-        if (!string.IsNullOrEmpty(UnlockBox.Password)) UnlockBrowser();
+        // UI-lock only for the bootstrap. A real vault PIN verifier is required before calling this security-critical.
+        MessageBox.Show("Der Sperrbildschirm ist derzeit ein UI-Lock. Die echte PIN-Prüfung wird vor dem Release an den verschlüsselten Vault gebunden.", "Orvian");
     }
 }
