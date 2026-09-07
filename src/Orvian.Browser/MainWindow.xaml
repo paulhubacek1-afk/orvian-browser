@@ -22,6 +22,14 @@
             <DoubleAnimation Storyboard.TargetName="WelcomeCardScale" Storyboard.TargetProperty="ScaleX" From="1" To="0.96" Duration="0:0:0.18"/>
             <DoubleAnimation Storyboard.TargetName="WelcomeCardScale" Storyboard.TargetProperty="ScaleY" From="1" To="0.96" Duration="0:0:0.18"/>
         </Storyboard>
+        <Storyboard x:Key="CreatorIntro">
+            <DoubleAnimation Storyboard.TargetName="CreatorOverlay" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.22"/>
+            <DoubleAnimation Storyboard.TargetName="CreatorCardScale" Storyboard.TargetProperty="ScaleX" From="0.94" To="1" Duration="0:0:0.28"/>
+            <DoubleAnimation Storyboard.TargetName="CreatorCardScale" Storyboard.TargetProperty="ScaleY" From="0.94" To="1" Duration="0:0:0.28"/>
+        </Storyboard>
+        <Storyboard x:Key="CreatorOutro">
+            <DoubleAnimation Storyboard.TargetName="CreatorOverlay" Storyboard.TargetProperty="Opacity" From="1" To="0" Duration="0:0:0.16"/>
+        </Storyboard>
         <Storyboard x:Key="UpdateIntro">
             <DoubleAnimation Storyboard.TargetName="UpdateOverlay" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.18"/>
         </Storyboard>
@@ -206,6 +214,36 @@
                                 <Border Background="#F1F5FB" CornerRadius="11" Padding="10,7" Margin="0,0,7,7"><TextBlock Text="Passwort-Tresor" FontWeight="SemiBold" Foreground="#405675"/></Border>
                             </WrapPanel>
                             <Button Content="Los geht's →" Height="46" Width="180" HorizontalAlignment="Left" Click="WelcomeContinue_Click" Style="{StaticResource PrimaryButton}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Border>
+
+            <Border x:Name="CreatorOverlay" Background="#DCECF7FA" Visibility="Collapsed" Opacity="0">
+                <Border Width="690" Padding="34" CornerRadius="28" Background="#FFFFFF" BorderBrush="#D3E1EE" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center" Effect="{StaticResource CardShadow}">
+                    <Border.RenderTransform><ScaleTransform x:Name="CreatorCardScale" CenterX="345" CenterY="220"/></Border.RenderTransform>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="64" Height="64" CornerRadius="20" Background="{StaticResource AccentSoftBrush}">
+                                <TextBlock Text="♥" FontSize="32" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Margin="16,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Creator-Support" FontSize="12" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                                <TextBlock Text="Ich unterstütze diese Creatorin" FontSize="28" FontWeight="Bold" Foreground="#172236"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Grid.Row="1" Text="Bitte tue dies auch: Noctra11" FontSize="20" FontWeight="SemiBold" Foreground="#31435D" Margin="0,22,0,4"/>
+                        <TextBlock Grid.Row="2" Text="Wenn dir ihre Inhalte gefallen, schau bei ihr auf Twitch und YouTube vorbei und unterstütze sie dort direkt. 💙" TextWrapping="Wrap" FontSize="14" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,22"/>
+                        <StackPanel Grid.Row="3" Orientation="Horizontal">
+                            <Button Content="Twitch" Width="150" Height="44" Margin="0,0,10,0" Style="{StaticResource PrimaryButton}" Tag="https://www.twitch.tv/noctra11" Click="CreatorLink_Click"/>
+                            <Button Content="YouTube" Width="150" Height="44" Margin="0,0,10,0" Padding="14,0" Click="CreatorLink_Click" Tag="https://www.youtube.com/@Noctra11"/>
+                            <Button Content="Später" Width="100" Height="44" Click="CreatorBannerLater_Click"/>
                         </StackPanel>
                     </Grid>
                 </Border>
