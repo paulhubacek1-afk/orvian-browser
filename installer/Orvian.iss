@@ -1,5 +1,7 @@
 #define MyAppName "Orvian Browser"
-#define MyAppVersion "0.1.0"
+#ifndef MyAppVersion
+#define MyAppVersion "0.1.1"
+#endif
 #define MyAppPublisher "Orvian Project"
 #define MyAppExeName "Orvian.exe"
 #define MyRuntime "MicrosoftEdgeWebview2RuntimeInstallerX64.exe"
