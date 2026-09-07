@@ -1,8 +1,6 @@
 using Microsoft.Web.WebView2.Core;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Http;
-using System.Net;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -44,11 +42,7 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closed(object? sender, EventArgs e) => _updateTimer?.Stop();
 
-    private void BeginIntro()
-    {
-        var intro = (Storyboard)FindResource("Intro");
-        BeginStoryboard(intro);
-    }
+    private void BeginIntro() => BeginStoryboard((Storyboard)FindResource("Intro"));
 
     private void ShowWelcomeIfNeeded()
     {
@@ -121,7 +115,7 @@ public partial class MainWindow : Window
 
     private async Task WarmupProtectionAsync()
     {
-        await Task.Run(async () => await _blocker.RefreshFiltersAsync());
+        await _blocker.RefreshFiltersAsync();
         await Dispatcher.InvokeAsync(() =>
         {
             BlockerStats.Text = $"• {Math.Max(0, _blocker.RuleCount):N0} Schutzregeln aktiv";
@@ -223,15 +217,12 @@ public partial class MainWindow : Window
     {
         var value = AddressBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(value)) return;
-
         if (TryBuildNetworkUrl(value, out var url))
         {
             BrowserView.CoreWebView2.Navigate(url);
             return;
         }
-
-        var searchUrl = "https://www.google.com/search?q=" + Uri.EscapeDataString(value);
-        BrowserView.CoreWebView2.Navigate(searchUrl);
+        BrowserView.CoreWebView2.Navigate("https://www.google.com/search?q=" + Uri.EscapeDataString(value));
     }
 
     private static bool TryBuildNetworkUrl(string value, out string url)
@@ -244,38 +235,32 @@ public partial class MainWindow : Window
             return true;
         }
 
-        var candidate = value;
-        if (IPAddress.TryParse(candidate, out var directIp))
+        if (IPAddress.TryParse(value, out var directIp))
         {
             url = directIp.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6
-                ? $"http://[{candidate}]/"
-                : $"http://{candidate}/";
+                ? $"http://[{value}]/"
+                : $"http://{value}/";
             return true;
         }
 
-        if (candidate.Contains(':', StringComparison.Ordinal))
+        if (Uri.TryCreate("http://" + value, UriKind.Absolute, out var localOrIp) &&
+            (localOrIp.HostNameType == UriHostNameType.IPv4 || localOrIp.HostNameType == UriHostNameType.IPv6))
         {
-            var bracketed = candidate.StartsWith("[", StringComparison.Ordinal) ? candidate : $"[{candidate}]";
-            if (Uri.TryCreate("http://" + bracketed, UriKind.Absolute, out var ipWithPort) &&
-                (ipWithPort.HostNameType == UriHostNameType.IPv6 || ipWithPort.HostNameType == UriHostNameType.IPv4))
-            {
-                url = ipWithPort.ToString();
-                return true;
-            }
-        }
-
-        if (candidate.StartsWith("localhost", StringComparison.OrdinalIgnoreCase) || candidate.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
-        {
-            url = "http://" + candidate;
+            url = localOrIp.ToString();
             return true;
         }
 
-        if (Uri.TryCreate("https://" + candidate, UriKind.Absolute, out var domain) && !string.IsNullOrWhiteSpace(domain.Host))
+        if (value.StartsWith("localhost", StringComparison.OrdinalIgnoreCase) || value.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
+        {
+            url = "http://" + value;
+            return true;
+        }
+
+        if (Uri.TryCreate("https://" + value, UriKind.Absolute, out var domain) && !string.IsNullOrWhiteSpace(domain.Host))
         {
             url = domain.ToString();
             return true;
         }
-
         return false;
     }
 
@@ -283,17 +268,9 @@ public partial class MainWindow : Window
     private void Forward_Click(object sender, RoutedEventArgs e) { if (_browserReady && BrowserView.CanGoForward) BrowserView.GoForward(); }
     private void Reload_Click(object sender, RoutedEventArgs e) { if (_browserReady) BrowserView.Reload(); }
     private void Home_Click(object sender, RoutedEventArgs e) { if (_browserReady) BrowserView.CoreWebView2.Navigate(Home); }
-
-    private void NewTab_Click(object sender, RoutedEventArgs e)
-    {
-        TabTitle.Text = "Neuer Tab";
-        AddressBox.Text = Home;
-        if (_browserReady) BrowserView.CoreWebView2.Navigate(Home);
-    }
-
+    private void NewTab_Click(object sender, RoutedEventArgs e) { TabTitle.Text = "Neuer Tab"; AddressBox.Text = Home; if (_browserReady) BrowserView.CoreWebView2.Navigate(Home); }
     private void CloseTab_Click(object sender, RoutedEventArgs e) => NewTab_Click(sender, e);
     private void Tab_Click(object sender, MouseButtonEventArgs e) { if (_browserReady) BrowserView.Focus(); }
-
     private void Bookmark_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Lesezeichen werden lokal gespeichert und in der nächsten Ausbaustufe in einer eigenen Bibliothek angezeigt.", "Orvian");
     private void Privacy_Click(object sender, RoutedEventArgs e) => MessageBox.Show($"Werbe-/Tracker-Schutz ist aktiv. {Math.Max(0, _blocker.RuleCount):N0} Regeln sind geladen.", "Orvian Datenschutz");
     private void Menu_Click(object sender, RoutedEventArgs e) => new SettingsWindow { Owner = this }.ShowDialog();
