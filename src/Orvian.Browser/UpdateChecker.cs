@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text.Json;
@@ -26,8 +27,6 @@ public sealed class UpdateChecker
     {
         try
         {
-            // The tiny version file detects a new release even before the GitHub Release has
-            // finished publishing its installer. The release endpoint supplies the installer.
             var remoteTask = GetRemoteVersionAsync(cancellationToken);
             var releaseTask = GetLatestReleaseAsync(cancellationToken);
 
@@ -63,10 +62,7 @@ public sealed class UpdateChecker
     private static async Task<Version?> GetRemoteVersionAsync(CancellationToken cancellationToken)
     {
         var cacheBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-        using var request = new HttpRequestMessage(
-            HttpMethod.Get,
-            $"{VersionUrl}?t={cacheBust}");
-
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{VersionUrl}?t={cacheBust}");
         request.Headers.CacheControl = new CacheControlHeaderValue
         {
             NoCache = true,
@@ -89,10 +85,7 @@ public sealed class UpdateChecker
     private static async Task<(Version Version, string? InstallerUrl)?> GetLatestReleaseAsync(CancellationToken cancellationToken)
     {
         var cacheBust = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-        using var request = new HttpRequestMessage(
-            HttpMethod.Get,
-            $"{ReleasesApi}?t={cacheBust}");
-
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{ReleasesApi}?t={cacheBust}");
         request.Headers.CacheControl = new CacheControlHeaderValue
         {
             NoCache = true,
@@ -109,11 +102,9 @@ public sealed class UpdateChecker
             return null;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var json = await JsonDocument.ParseAsync(
-            stream,
-            cancellationToken: cancellationToken);
-
+        using var json = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         var root = json.RootElement;
+
         var tag = root.TryGetProperty("tag_name", out var tagElement)
             ? tagElement.GetString()?.TrimStart('v', 'V')
             : null;
