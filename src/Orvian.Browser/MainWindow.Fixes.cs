@@ -8,8 +8,9 @@ namespace Orvian.Browser;
 
 public partial class MainWindow
 {
-    private DispatcherTimer? _uiFixTimer;
+    private DispatcherTimer? _tabSafetyTimer;
     private bool _uiFixInitialized;
+    private bool _tabSyncQueued;
 
     static MainWindow()
     {
@@ -32,25 +33,83 @@ public partial class MainWindow
         _uiFixInitialized = true;
 
         PreviewKeyDown += ChromiumLikeShortcuts;
+        PreviewMouseDown += OnMainWindowMouseDown;
+        Closed += OnUiFixWindowClosed;
 
-        _uiFixTimer = new DispatcherTimer(DispatcherPriority.Background)
+        // The old implementation woke the UI every 250 ms. That was wasteful and
+        // still allowed races while WebView2 was creating a tab. Keep a very small
+        // safety net at 2 s, while normal tab actions are synchronized immediately.
+        _tabSafetyTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
-            Interval = TimeSpan.FromMilliseconds(250)
+            Interval = TimeSpan.FromSeconds(2)
         };
-        _uiFixTimer.Tick += (_, _) => SyncTabStripAndButtons();
-        _uiFixTimer.Start();
+        _tabSafetyTimer.Tick += (_, _) => ReconcileTabsIfNeeded();
+        _tabSafetyTimer.Start();
 
-        SyncTabStripAndButtons();
+        QueueTabReconcile();
     }
 
-    private void SyncTabStripAndButtons()
+    private void OnUiFixWindowClosed(object? sender, EventArgs e)
+    {
+        _tabSafetyTimer?.Stop();
+        _tabSafetyTimer = null;
+        PreviewKeyDown -= ChromiumLikeShortcuts;
+        PreviewMouseDown -= OnMainWindowMouseDown;
+    }
+
+    private void OnMainWindowMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        // New-tab, tab-close and tab-select buttons are routed through the window.
+        // Queue one reconciliation after WPF has finished the click handler.
+        if (e.OriginalSource is DependencyObject source &&
+            FindVisualParent<Button>(source) is Button button &&
+            (ReferenceEquals(button, NewTabButton) || IsTabButton(button)))
+        {
+            QueueTabReconcile();
+        }
+    }
+
+    private bool IsTabButton(Button button)
+    {
+        if (ReferenceEquals(button, NewTabButton)) return true;
+        if (button.Tag is null) return false;
+        return _tabs.Any(tab => ReferenceEquals(tab.HeaderButton, button));
+    }
+
+    private static T? FindVisualParent<T>(DependencyObject? child) where T : DependencyObject
+    {
+        while (child != null)
+        {
+            if (child is T match) return match;
+            child = VisualTreeHelper.GetParent(child);
+        }
+
+        return null;
+    }
+
+    private void QueueTabReconcile()
+    {
+        if (_tabSyncQueued || !IsLoaded) return;
+        _tabSyncQueued = true;
+
+        Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+        {
+            _tabSyncQueued = false;
+            ReconcileTabsIfNeeded(forceVisualRefresh: true);
+        }));
+    }
+
+    private void ReconcileTabsIfNeeded(bool forceVisualRefresh = false)
     {
         if (!IsLoaded) return;
 
-        // Keep the visual tab strip synchronized with the real WebView2 tabs.
-        // This fixes the case where a newly created tab existed internally but
-        // its header was not attached to TabStrip.
-        foreach (var tab in _tabs.ToArray())
+        var missing = _tabs.Any(tab => !TabStrip.Children.Contains(tab.HeaderButton));
+        var stale = TabStrip.Children.OfType<Button>().Any(header =>
+            !_tabs.Any(tab => ReferenceEquals(tab.HeaderButton, header)));
+
+        if (!missing && !stale && !forceVisualRefresh) return;
+
+        foreach (var tab in _tabs)
         {
             if (!TabStrip.Children.Contains(tab.HeaderButton))
                 TabStrip.Children.Add(tab.HeaderButton);
@@ -61,7 +120,7 @@ public partial class MainWindow
         for (var i = TabStrip.Children.Count - 1; i >= 0; i--)
         {
             if (TabStrip.Children[i] is Button header &&
-                !_tabs.Any(t => ReferenceEquals(t.HeaderButton, header)))
+                !_tabs.Any(tab => ReferenceEquals(tab.HeaderButton, header)))
             {
                 TabStrip.Children.RemoveAt(i);
             }
@@ -81,14 +140,14 @@ public partial class MainWindow
         close.Background = Brushes.Transparent;
         close.BorderBrush = Brushes.Transparent;
         close.Foreground = new SolidColorBrush(Color.FromRgb(92, 104, 121));
-        close.FontSize = 17;
+        close.FontSize = 16;
         close.FontWeight = FontWeights.Normal;
         close.Cursor = Cursors.Hand;
         close.ToolTip = "Tab schließen";
 
         var template = new ControlTemplate(typeof(Button));
         var border = new FrameworkElementFactory(typeof(Border));
-        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(7));
         border.SetValue(Border.PaddingProperty, new Thickness(0));
         border.SetBinding(
             Border.BackgroundProperty,
@@ -98,10 +157,10 @@ public partial class MainWindow
                     System.Windows.Data.RelativeSourceMode.TemplatedParent)
             });
 
-        var text = new FrameworkElementFactory(typeof(ContentPresenter));
-        text.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-        text.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
-        border.AppendChild(text);
+        var content = new FrameworkElementFactory(typeof(ContentPresenter));
+        content.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        content.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+        border.AppendChild(content);
         template.VisualTree = border;
         close.Template = template;
     }
@@ -140,8 +199,7 @@ public partial class MainWindow
 
         if (e.Key >= Key.D1 && e.Key <= Key.D8)
         {
-            var index = (int)e.Key - (int)Key.D1;
-            SelectTabAt(index);
+            SelectTabAt((int)e.Key - (int)Key.D1);
             e.Handled = true;
         }
         else if (e.Key == Key.D9)
@@ -158,11 +216,15 @@ public partial class MainWindow
         if (index < 0) return;
         index = (index + direction + _tabs.Count) % _tabs.Count;
         SelectTab(_tabs[index]);
+        QueueTabReconcile();
     }
 
     private void SelectTabAt(int index)
     {
         if (index >= 0 && index < _tabs.Count)
+        {
             SelectTab(_tabs[index]);
+            QueueTabReconcile();
+        }
     }
 }
