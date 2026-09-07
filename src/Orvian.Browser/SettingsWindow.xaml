@@ -22,7 +22,7 @@
                     <Button Content="ⓘ   Über Orvian" HorizontalContentAlignment="Left" Padding="15,12" Click="About_Click"/>
                 </StackPanel>
                 <Border DockPanel.Dock="Bottom" Margin="8,18,8,6" Padding="14" Background="#EDF3FF" CornerRadius="16">
-                    <StackPanel><TextBlock Text="ORVIAN 0.3.1" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/><TextBlock Text="Lokale Einstellungen • keine Browser-Telemetrie" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,4,0,0"/></StackPanel>
+                    <StackPanel><TextBlock Text="ORVIAN 1.0.0" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/><TextBlock Text="Lokale Einstellungen • keine Browser-Telemetrie" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,4,0,0"/></StackPanel>
                 </Border>
             </DockPanel>
         </Border>
@@ -44,7 +44,7 @@
                     </StackPanel>
 
                     <StackPanel x:Name="PrivacyPanel" Visibility="Collapsed">
-                        <Border Background="#F6F8FC" CornerRadius="18" Padding="22"><StackPanel><TextBlock Text="Schutz" FontSize="17" FontWeight="SemiBold"/><CheckBox Content="Werbeblocker" IsChecked="True" Margin="0,12,0,0"/><CheckBox Content="Tracker-Schutz" IsChecked="True" Margin="0,9,0,0"/><CheckBox Content="Filter automatisch aktualisieren" IsChecked="True" Margin="0,9,0,0"/><TextBlock Text="Orvian prüft Ressourcen mit schnellen Host- und Pfadregeln. Normale Websites wie Google werden dabei nicht als komplette Seite blockiert." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,15,0,0"/></StackPanel></Border>
+                        <Border Background="#F6F8FC" CornerRadius="18" Padding="22"><StackPanel><TextBlock Text="Schutz" FontSize="17" FontWeight="SemiBold"/><CheckBox Content="Werbeblocker" IsChecked="True" Margin="0,12,0,0"/><CheckBox Content="Tracker-Schutz" IsChecked="True" Margin="0,9,0,0"/><CheckBox Content="Filter automatisch aktualisieren" IsChecked="True" Margin="0,9,0,0"/><TextBlock Text="Orvian filtert Netzwerkressourcen mit schnellen Host- und Pfadregeln. Top-Level-Dokumente sowie lokale HTML-Dateien werden nicht vom Blocker abgefangen." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,15,0,0"/></StackPanel></Border>
                     </StackPanel>
 
                     <StackPanel x:Name="SecurityPanel" Visibility="Collapsed">
@@ -52,7 +52,7 @@
                     </StackPanel>
 
                     <StackPanel x:Name="PerformancePanel" Visibility="Collapsed">
-                        <Border Background="#F6F8FC" CornerRadius="18" Padding="22"><StackPanel><TextBlock Text="Leistung" FontSize="17" FontWeight="SemiBold"/><CheckBox Content="Hardwarebeschleunigung verwenden" IsChecked="True" Margin="0,12,0,0"/><CheckBox Content="Intelligentes Cache-Verhalten" IsChecked="True" Margin="0,9,0,0"/><CheckBox Content="Inaktive Tabs möglichst entlasten" IsChecked="True" Margin="0,9,0,0"/><TextBlock Text="Orvian nutzt gemeinsame WebView2-Ressourcen und vermeidet unnötige Arbeit im Browser-Chrome." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,15,0,0"/></StackPanel></Border>
+                        <Border Background="#F6F8FC" CornerRadius="18" Padding="22"><StackPanel><TextBlock Text="Leistung" FontSize="17" FontWeight="SemiBold"/><CheckBox Content="Hardwarebeschleunigung verwenden" IsChecked="True" Margin="0,12,0,0"/><CheckBox Content="Intelligentes Cache-Verhalten" IsChecked="True" Margin="0,9,0,0"/><CheckBox Content="Inaktive Tabs möglichst entlasten" IsChecked="True" Margin="0,9,0,0"/><TextBlock Text="Orvian nutzt WebView2 und vermeidet unnötige Arbeit im Browser-Chrome. Filterlisten werden im Hintergrund aktualisiert." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,15,0,0"/></StackPanel></Border>
                     </StackPanel>
 
                     <StackPanel x:Name="HelpPanel" Visibility="Collapsed">
@@ -63,9 +63,9 @@
                         <Border Background="#F6F8FC" CornerRadius="18" Padding="24">
                             <StackPanel>
                                 <TextBlock Text="Orvian Browser" FontSize="31" FontWeight="Bold"/>
-                                <TextBlock Text="Stable 0.3.1 • Windows x64" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" FontSize="14" Margin="0,6,0,18"/>
-                                <TextBlock Text="Orvian Browser ist ein moderner Desktop-Browser für Windows, der Microsoft Edge WebView2 als Chromium-basierte Webplattform nutzt und sie mit einer eigenständigen Browseroberfläche verbindet. Das Projekt bringt klassische Browserfunktionen wie Tabs, Navigation, Verlauf, Lesezeichen und Downloads mit lokalen Schutzfunktionen zusammen. Dazu gehören ein schneller Werbe- und Tracker-Schutz, lokale Berechtigungsverwaltung, ein verschlüsselter Passwort-Tresor und eine automatische Update-Prüfung. Orvian verfolgt dabei einen ähnlichen technischen Grundgedanken wie moderne Chromium-Browser: Die Webdarstellung wird von einer etablierten Browser-Engine übernommen, während Browser-Chrome, Bedienoberfläche, Datenschutzfunktionen und zusätzliche Werkzeuge eigenständig umgesetzt werden. So soll Orvian eine vertraute Webkompatibilität mit einer eigenen Identität verbinden – inklusive des animierten Orvian-Pandas, der den Browser begleitet, ohne die eigentliche Website zu überdecken." TextWrapping="Wrap" FontSize="14" Foreground="{StaticResource MutedBrush}"/>
-                                <Border Background="#EAF1FF" CornerRadius="15" Padding="15" Margin="0,20,0,0"><TextBlock Text="Engine: Microsoft Edge WebView2   •   Oberfläche: WPF   •   Ziel: Windows x64   •   Release: Stable 0.3.1" TextWrapping="Wrap" Foreground="#34557E" FontWeight="SemiBold"/></Border>
+                                <TextBlock Text="Stable 1.0.0 • Windows x64" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" FontSize="14" Margin="0,6,0,18"/>
+                                <TextBlock Text="Orvian Browser ist ein moderner Desktop-Browser für Windows, der Microsoft Edge WebView2 als Chromium-basierte Webplattform nutzt und sie mit einer eigenständigen Browseroberfläche verbindet. Die Oberfläche stellt Tabs, Navigation, Verlauf, Lesezeichen, Downloads, lokale HTML-Dateien und eine klare Adressleiste bereit. Dazu kommen ein schneller Netzwerk-Filter für erkannte Werbe- und Tracker-Ressourcen, lokale Berechtigungsverwaltung, ein verschlüsselter Passwort-Tresor und eine automatische Update-Prüfung. Der technische Grundgedanke ist ähnlich zu modernen Chromium-Browsern: Eine etablierte Web-Engine übernimmt die Webplattform, während Browser-Chrome, Bedienoberfläche und zusätzliche Funktionen eigenständig umgesetzt werden. Orvian verbindet so vertraute Webkompatibilität mit einer eigenen Identität – inklusive des animierten Orvian-Pandas, der den Browser begleitet, ohne Webseiten oder die Browserleiste zu verdecken." TextWrapping="Wrap" FontSize="14" Foreground="{StaticResource MutedBrush}"/>
+                                <Border Background="#EAF1FF" CornerRadius="15" Padding="15" Margin="0,20,0,0"><TextBlock Text="Engine: Microsoft Edge WebView2   •   Oberfläche: WPF   •   Ziel: Windows x64   •   Release: Stable 1.0.0" TextWrapping="Wrap" Foreground="#34557E" FontWeight="SemiBold"/></Border>
                             </StackPanel>
                         </Border>
                     </StackPanel>
