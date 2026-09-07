@@ -1,8 +1,9 @@
 using Microsoft.Web.WebView2.Core;
-using System.Diagnostics;
+using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 
 namespace Orvian.Browser;
 
@@ -20,10 +21,21 @@ public partial class MainWindow : Window
         Loaded += MainWindow_Loaded;
     }
 
-    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        BeginIntro();
+        _ = InitializeBrowserAsync();
+    }
+
+    private void BeginIntro()
+    {
+        var intro = (Storyboard)FindResource("Intro");
+        BeginStoryboard(intro);
+    }
+
+    private async System.Threading.Tasks.Task InitializeBrowserAsync()
     {
         if (_browserReady) return;
-
         try
         {
             var userDataFolder = Path.Combine(
@@ -31,11 +43,8 @@ public partial class MainWindow : Window
                 "Orvian", "WebView2");
             Directory.CreateDirectory(userDataFolder);
 
-            var environment = await CoreWebView2Environment.CreateAsync(
-                browserExecutableFolder: null,
-                userDataFolder: userDataFolder,
-                options: new CoreWebView2EnvironmentOptions());
-
+            var options = new CoreWebView2EnvironmentOptions();
+            var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
             await BrowserView.EnsureCoreWebView2Async(environment);
 
             var core = BrowserView.CoreWebView2;
@@ -45,36 +54,30 @@ public partial class MainWindow : Window
             core.Settings.IsStatusBarEnabled = false;
             core.Settings.AreBrowserAcceleratorKeysEnabled = true;
 
-            // Keep the blocker lightweight; it only inspects requests and never rewrites page content.
-            core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All,
-                CoreWebView2WebResourceRequestSourceKinds.All);
+            core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
             core.WebResourceRequested += WebResourceRequested;
             core.NavigationStarting += NavigationStarting;
             core.NavigationCompleted += NavigationCompleted;
             core.NewWindowRequested += Core_NewWindowRequested;
 
             _browserReady = true;
-            PrivacyStats.Text = "Orvian ist bereit";
+            PrivacyStats.Text = "Orvian schützt deine Sitzung • WebView2 bereit";
             core.Navigate(Home);
         }
         catch (Exception ex)
         {
-            _browserReady = false;
-            PrivacyStats.Text = "Browser konnte nicht gestartet werden";
-            var message =
-                "Orvian konnte die Browser-Engine nicht starten.\n\n" +
-                "Prüfe, ob Microsoft Edge WebView2 Runtime installiert ist.\n\n" +
-                "Technische Meldung:\n" + ex.Message;
-            MessageBox.Show(message, "Orvian – Startfehler", MessageBoxButton.OK, MessageBoxImage.Error);
-            Close();
+            PrivacyStats.Text = "Start der Browser-Engine fehlgeschlagen";
+            MessageBox.Show(
+                "Orvian konnte die WebView2-Browserengine nicht starten.\n\n" + ex.Message +
+                "\n\nInstalliere die aktuelle Microsoft Edge WebView2 Runtime und starte Orvian erneut.",
+                "Orvian – Startfehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
     private void Core_NewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
     {
         e.Handled = true;
-        if (_browserReady && !string.IsNullOrWhiteSpace(e.Uri))
-            BrowserView.CoreWebView2.Navigate(e.Uri);
+        if (_browserReady && !string.IsNullOrWhiteSpace(e.Uri)) BrowserView.CoreWebView2.Navigate(e.Uri);
     }
 
     private void WebResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
@@ -82,19 +85,14 @@ public partial class MainWindow : Window
         try
         {
             if (_blocker.ShouldBlock(e.Request.Uri))
-            {
-                e.Response = BrowserView.CoreWebView2.Environment.CreateWebResourceResponse(
-                    null, 403, "Blocked by Orvian", "Content-Type: text/plain");
-            }
+                e.Response = BrowserView.CoreWebView2.Environment.CreateWebResourceResponse(null, 403, "Blocked by Orvian", "Content-Type: text/plain");
         }
-        catch
-        {
-            // Never allow blocker errors to terminate navigation or the browser process.
-        }
+        catch { }
     }
 
     private void NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
+        PrivacyStats.Text = "Orvian lädt die Seite …";
         if (_blocker.IsBlockedHost(e.Uri))
         {
             e.Cancel = true;
@@ -104,49 +102,62 @@ public partial class MainWindow : Window
 
     private void NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
-        if (BrowserView.Source != null)
-            AddressBox.Text = BrowserView.Source.ToString();
-
+        if (BrowserView.Source != null) AddressBox.Text = BrowserView.Source.ToString();
         BackButton.IsEnabled = BrowserView.CanGoBack;
         ForwardButton.IsEnabled = BrowserView.CanGoForward;
+        PrivacyStats.Text = e.IsSuccess ? "Orvian schützt deine Sitzung • Seite bereit" : "Orvian • Seite konnte nicht vollständig geladen werden";
+        TabTitle.Text = BrowserView.CoreWebView2.DocumentTitle;
+        if (string.IsNullOrWhiteSpace(TabTitle.Text)) TabTitle.Text = "Neuer Tab";
     }
 
     private void AddressBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter || !_browserReady) return;
-
-        var value = AddressBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(value)) return;
-
-        var url = value.Contains(' ')
-            ? "https://www.google.com/search?q=" + Uri.EscapeDataString(value)
-            : value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-              value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                ? value
-                : "https://" + value;
-
-        BrowserView.CoreWebView2.Navigate(url);
+        NavigateFromAddress();
         e.Handled = true;
     }
 
-    private void Back_Click(object sender, RoutedEventArgs e)
+    private void NavigateFromAddress()
     {
-        if (_browserReady && BrowserView.CanGoBack) BrowserView.GoBack();
+        var value = AddressBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(value)) return;
+        var url = value.Contains(' ')
+            ? "https://www.google.com/search?q=" + Uri.EscapeDataString(value)
+            : value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                ? value : "https://" + value;
+        BrowserView.CoreWebView2.Navigate(url);
     }
 
-    private void Forward_Click(object sender, RoutedEventArgs e)
-    {
-        if (_browserReady && BrowserView.CanGoForward) BrowserView.GoForward();
-    }
+    private void Back_Click(object sender, RoutedEventArgs e) { if (_browserReady && BrowserView.CanGoBack) BrowserView.GoBack(); }
+    private void Forward_Click(object sender, RoutedEventArgs e) { if (_browserReady && BrowserView.CanGoForward) BrowserView.GoForward(); }
+    private void Reload_Click(object sender, RoutedEventArgs e) { if (_browserReady) BrowserView.Reload(); }
+    private void Home_Click(object sender, RoutedEventArgs e) { if (_browserReady) BrowserView.CoreWebView2.Navigate(Home); }
 
-    private void Reload_Click(object sender, RoutedEventArgs e)
+    private void NewTab_Click(object sender, RoutedEventArgs e)
     {
-        if (_browserReady) BrowserView.Reload();
-    }
-
-    private void Home_Click(object sender, RoutedEventArgs e)
-    {
+        TabTitle.Text = "Neuer Tab";
+        AddressBox.Text = Home;
         if (_browserReady) BrowserView.CoreWebView2.Navigate(Home);
+    }
+
+    private void CloseTab_Click(object sender, RoutedEventArgs e)
+    {
+        NewTab_Click(sender, e);
+    }
+
+    private void Tab_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (_browserReady) BrowserView.Focus();
+    }
+
+    private void Bookmark_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show("Lesezeichen werden lokal gespeichert und in der nächsten Ausbaustufe in einer eigenen Bibliothek angezeigt.", "Orvian");
+    }
+
+    private void Privacy_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show("Werbe-/Tracker-Schutz ist für diese Sitzung aktiv. Einstellungen können über das Menü angepasst werden.", "Orvian Datenschutz");
     }
 
     private void Menu_Click(object sender, RoutedEventArgs e)
@@ -156,9 +167,7 @@ public partial class MainWindow : Window
 
     private void InstallApp_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(
-            "Web-Apps werden in einer späteren Version über Web-App-Manifeste als eigene Orvian-App angelegt.",
-            "Orvian");
+        MessageBox.Show("Orvian erkennt Web-App-Manifeste und kann Websites später als eigene App installieren.", "Website als App");
     }
 
     private async void CheckPassword_Click(object sender, RoutedEventArgs e)
@@ -170,20 +179,15 @@ public partial class MainWindow : Window
         MessageBox.Show(result, "Orvian Passwortschutz");
     }
 
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    private void Maximize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    private void CloseWindow_Click(object sender, RoutedEventArgs e) => Close();
+
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (Keyboard.Modifiers != ModifierKeys.Alt) return;
-
-        if (e.Key == Key.C)
-        {
-            LockBrowser();
-            e.Handled = true;
-        }
-        else if (e.Key == Key.D)
-        {
-            UnlockBrowser();
-            e.Handled = true;
-        }
+        if (e.Key == Key.C) { LockBrowser(); e.Handled = true; }
+        else if (e.Key == Key.D) { UnlockBrowser(); e.Handled = true; }
     }
 
     private void LockBrowser()
@@ -204,9 +208,5 @@ public partial class MainWindow : Window
         BrowserView.Visibility = Visibility.Visible;
     }
 
-    private void Unlock_Click(object sender, RoutedEventArgs e)
-    {
-        // UI lock for this first release; password-vault authentication is separate from browsing.
-        UnlockBrowser();
-    }
+    private void Unlock_Click(object sender, RoutedEventArgs e) => UnlockBrowser();
 }
