@@ -5,7 +5,7 @@ A privacy-first, customizable browser for Windows with no account required.
 ## Goals
 
 - Chromium-based browsing via Microsoft Edge WebView2 Runtime
-- Local ad/tracker blocking with user-editable rules
+- Local ad/tracker blocking with user-editable rules and cached filter lists
 - Phishing protection with a local blocklist and optional remote threat intelligence
 - Password manager with encrypted local storage; passwords are never logged in plaintext
 - Pwned Passwords checking using HIBP's k-anonymous range API
@@ -14,7 +14,7 @@ A privacy-first, customizable browser for Windows with no account required.
 - `Alt+C` screen/browser lock and `Alt+D` unlock
 - Version checker and GitHub Release updater
 - Open source, no account, no telemetry by default
-- Installer and uninstaller
+- Installer with repair/update/uninstall mode
 - Lightweight startup and lazy-loaded services
 
 ## Security model
@@ -22,6 +22,12 @@ A privacy-first, customizable browser for Windows with no account required.
 Orvian must never implement a keystroke logger. The password feature is a password manager: credentials are captured only by explicit browser form-save actions and stored encrypted using Windows DPAPI tied to the current Windows user.
 
 For password-leak checks, Orvian hashes the password locally and only sends the first five SHA-1 characters to the Pwned Passwords range API. The complete password and complete hash stay local.
+
+## Filter lists
+
+Orvian uses a lightweight network filtering engine compatible with common uBlock Origin / EasyList-style network rules. It downloads filter data from uBlock-Origin-maintained URLs for EasyList and EasyPrivacy, caches the data locally, and never embeds the uBlock Origin browser extension itself.
+
+The filter lists remain subject to their respective upstream licenses. uBlock Origin itself is GPLv3 licensed and documents the licenses of its bundled third-party filter lists.
 
 ## Important limitations
 

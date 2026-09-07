@@ -1,31 +1,48 @@
 using Microsoft.Web.WebView2.Core;
-using System;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Http;
+using System.Net;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace Orvian.Browser;
 
 public partial class MainWindow : Window
 {
     private readonly Blocker _blocker = new();
+    private readonly UpdateChecker _updateChecker = new();
     private bool _locked;
     private bool _browserReady;
+    private bool _welcomeVisible;
+    private UpdateInfo? _pendingUpdate;
+    private DispatcherTimer? _updateTimer;
     private const string Home = "https://www.google.com/";
+    private static readonly string WelcomeFlag = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orvian", "welcome-shown.flag");
 
     public MainWindow()
     {
         InitializeComponent();
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         Loaded += MainWindow_Loaded;
+        Closed += MainWindow_Closed;
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         BeginIntro();
+        ShowWelcomeIfNeeded();
+        StartUpdateTimer();
         _ = InitializeBrowserAsync();
+        _ = WarmupProtectionAsync();
     }
+
+    private void MainWindow_Closed(object? sender, EventArgs e) => _updateTimer?.Stop();
 
     private void BeginIntro()
     {
@@ -33,14 +50,41 @@ public partial class MainWindow : Window
         BeginStoryboard(intro);
     }
 
-    private async System.Threading.Tasks.Task InitializeBrowserAsync()
+    private void ShowWelcomeIfNeeded()
+    {
+        try
+        {
+            if (File.Exists(WelcomeFlag)) return;
+            _welcomeVisible = true;
+            WelcomeOverlay.Visibility = Visibility.Visible;
+            BeginStoryboard((Storyboard)FindResource("WelcomeIntro"));
+        }
+        catch { }
+    }
+
+    private async void WelcomeContinue_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(WelcomeFlag)!);
+            await File.WriteAllTextAsync(WelcomeFlag, DateTime.UtcNow.ToString("O"));
+        }
+        catch { }
+
+        BeginStoryboard((Storyboard)FindResource("WelcomeOutro"));
+        await Task.Delay(280);
+        WelcomeOverlay.Visibility = Visibility.Collapsed;
+        _welcomeVisible = false;
+        _ = CheckForUpdatesAsync();
+    }
+
+    private async Task InitializeBrowserAsync()
     {
         if (_browserReady) return;
         try
         {
             var userDataFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Orvian", "WebView2");
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orvian", "WebView2");
             Directory.CreateDirectory(userDataFolder);
 
             var options = new CoreWebView2EnvironmentOptions();
@@ -63,6 +107,7 @@ public partial class MainWindow : Window
             _browserReady = true;
             PrivacyStats.Text = "Orvian schützt deine Sitzung • WebView2 bereit";
             core.Navigate(Home);
+            _ = CheckForUpdatesAsync();
         }
         catch (Exception ex)
         {
@@ -71,6 +116,63 @@ public partial class MainWindow : Window
                 "Orvian konnte die WebView2-Browserengine nicht starten.\n\n" + ex.Message +
                 "\n\nInstalliere die aktuelle Microsoft Edge WebView2 Runtime und starte Orvian erneut.",
                 "Orvian – Startfehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async Task WarmupProtectionAsync()
+    {
+        await Task.Run(async () => await _blocker.RefreshFiltersAsync());
+        await Dispatcher.InvokeAsync(() =>
+        {
+            BlockerStats.Text = $"• {Math.Max(0, _blocker.RuleCount):N0} Schutzregeln aktiv";
+            if (_browserReady) PrivacyStats.Text = "Orvian schützt deine Sitzung • Schutzfilter aktuell";
+        });
+    }
+
+    private void StartUpdateTimer()
+    {
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(6) };
+        _updateTimer.Tick += async (_, _) => await CheckForUpdatesAsync();
+        _updateTimer.Start();
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            if (_welcomeVisible) return;
+            var update = await _updateChecker.GetLatestAsync();
+            if (update is null || update.Version <= _updateChecker.CurrentVersion) return;
+            _pendingUpdate = update;
+            UpdateText.Text = $"Orvian {_updateChecker.CurrentVersion} ist installiert. Version {update.Version} ist auf GitHub verfügbar.";
+            UpdateOverlay.Visibility = Visibility.Visible;
+            BeginStoryboard((Storyboard)FindResource("UpdateIntro"));
+        }
+        catch { }
+    }
+
+    private void UpdateLater_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateOverlay.Visibility = Visibility.Collapsed;
+        _pendingUpdate = null;
+    }
+
+    private async void UpdateNow_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pendingUpdate is null) return;
+        if (sender is Button button) { button.IsEnabled = false; button.Content = "Wird heruntergeladen …"; }
+        try
+        {
+            var path = await _updateChecker.DownloadInstallerAsync(_pendingUpdate);
+            if (path is null) throw new InvalidOperationException("Installer konnte nicht heruntergeladen werden.");
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            if (sender is Button failedButton) { failedButton.IsEnabled = true; failedButton.Content = "Jetzt aktualisieren"; }
+            MessageBox.Show("Das Update konnte nicht gestartet werden.\n\n" + ex.Message, "Orvian Update", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -121,11 +223,60 @@ public partial class MainWindow : Window
     {
         var value = AddressBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(value)) return;
-        var url = value.Contains(' ')
-            ? "https://www.google.com/search?q=" + Uri.EscapeDataString(value)
-            : value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                ? value : "https://" + value;
-        BrowserView.CoreWebView2.Navigate(url);
+
+        if (TryBuildNetworkUrl(value, out var url))
+        {
+            BrowserView.CoreWebView2.Navigate(url);
+            return;
+        }
+
+        var searchUrl = "https://www.google.com/search?q=" + Uri.EscapeDataString(value);
+        BrowserView.CoreWebView2.Navigate(searchUrl);
+    }
+
+    private static bool TryBuildNetworkUrl(string value, out string url)
+    {
+        url = string.Empty;
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absolute) &&
+            (absolute.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase) || absolute.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase)))
+        {
+            url = absolute.ToString();
+            return true;
+        }
+
+        var candidate = value;
+        if (IPAddress.TryParse(candidate, out var directIp))
+        {
+            url = directIp.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6
+                ? $"http://[{candidate}]/"
+                : $"http://{candidate}/";
+            return true;
+        }
+
+        if (candidate.Contains(':', StringComparison.Ordinal))
+        {
+            var bracketed = candidate.StartsWith("[", StringComparison.Ordinal) ? candidate : $"[{candidate}]";
+            if (Uri.TryCreate("http://" + bracketed, UriKind.Absolute, out var ipWithPort) &&
+                (ipWithPort.HostNameType == UriHostNameType.IPv6 || ipWithPort.HostNameType == UriHostNameType.IPv4))
+            {
+                url = ipWithPort.ToString();
+                return true;
+            }
+        }
+
+        if (candidate.StartsWith("localhost", StringComparison.OrdinalIgnoreCase) || candidate.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
+        {
+            url = "http://" + candidate;
+            return true;
+        }
+
+        if (Uri.TryCreate("https://" + candidate, UriKind.Absolute, out var domain) && !string.IsNullOrWhiteSpace(domain.Host))
+        {
+            url = domain.ToString();
+            return true;
+        }
+
+        return false;
     }
 
     private void Back_Click(object sender, RoutedEventArgs e) { if (_browserReady && BrowserView.CanGoBack) BrowserView.GoBack(); }
@@ -140,35 +291,13 @@ public partial class MainWindow : Window
         if (_browserReady) BrowserView.CoreWebView2.Navigate(Home);
     }
 
-    private void CloseTab_Click(object sender, RoutedEventArgs e)
-    {
-        NewTab_Click(sender, e);
-    }
+    private void CloseTab_Click(object sender, RoutedEventArgs e) => NewTab_Click(sender, e);
+    private void Tab_Click(object sender, MouseButtonEventArgs e) { if (_browserReady) BrowserView.Focus(); }
 
-    private void Tab_Click(object sender, MouseButtonEventArgs e)
-    {
-        if (_browserReady) BrowserView.Focus();
-    }
-
-    private void Bookmark_Click(object sender, RoutedEventArgs e)
-    {
-        MessageBox.Show("Lesezeichen werden lokal gespeichert und in der nächsten Ausbaustufe in einer eigenen Bibliothek angezeigt.", "Orvian");
-    }
-
-    private void Privacy_Click(object sender, RoutedEventArgs e)
-    {
-        MessageBox.Show("Werbe-/Tracker-Schutz ist für diese Sitzung aktiv. Einstellungen können über das Menü angepasst werden.", "Orvian Datenschutz");
-    }
-
-    private void Menu_Click(object sender, RoutedEventArgs e)
-    {
-        new SettingsWindow { Owner = this }.ShowDialog();
-    }
-
-    private void InstallApp_Click(object sender, RoutedEventArgs e)
-    {
-        MessageBox.Show("Orvian erkennt Web-App-Manifeste und kann Websites später als eigene App installieren.", "Website als App");
-    }
+    private void Bookmark_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Lesezeichen werden lokal gespeichert und in der nächsten Ausbaustufe in einer eigenen Bibliothek angezeigt.", "Orvian");
+    private void Privacy_Click(object sender, RoutedEventArgs e) => MessageBox.Show($"Werbe-/Tracker-Schutz ist aktiv. {Math.Max(0, _blocker.RuleCount):N0} Regeln sind geladen.", "Orvian Datenschutz");
+    private void Menu_Click(object sender, RoutedEventArgs e) => new SettingsWindow { Owner = this }.ShowDialog();
+    private void InstallApp_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Orvian erkennt Web-App-Manifeste und kann Websites später als eigene App installieren.", "Website als App");
 
     private async void CheckPassword_Click(object sender, RoutedEventArgs e)
     {

@@ -1,6 +1,6 @@
 #define MyAppName "Orvian Browser"
 #ifndef MyAppVersion
-#define MyAppVersion "0.1.1"
+#define MyAppVersion "0.1.2"
 #endif
 #define MyAppPublisher "Orvian Project"
 #define MyAppExeName "Orvian.exe"
@@ -21,6 +21,8 @@ ArchitecturesInstallIn64BitMode=x64
 WizardStyle=modern
 DisableWelcomePage=no
 DisableProgramGroupPage=yes
+CloseApplications=yes
+CloseApplicationsFilter=Orvian.exe
 UninstallDisplayIcon={app}\{#MyAppExeName}
 SetupIconFile=..\assets\orvian.ico
 
@@ -37,13 +39,82 @@ Filename: "{tmp}\{#MyRuntime}"; Parameters: "/silent /install"; StatusMsg: "WebV
 Filename: "{app}\{#MyAppExeName}"; Description: "Orvian Browser starten"; Flags: nowait postinstall skipifsilent
 
 [Code]
+var
+  MaintenancePage: TInputOptionWizardPage;
+  MaintenanceAction: Integer;
+
+function ExistingInstallation: Boolean;
+begin
+  Result := FileExists(ExpandConstant('{app}\{#MyAppExeName}')) or FileExists(ExpandConstant('{app}\unins000.exe'));
+end;
+
 procedure InitializeWizard;
 begin
+  MaintenanceAction := 1;
+
   WizardForm.WelcomeLabel1.Caption := 'Willkommen bei Orvian!';
-  WizardForm.WelcomeLabel2.Caption := 'Dies ist ein kleines Open Source Browser Projekt!' + #13#10 +
-    'Sicher. Anpassbar. Ressourcenschonend.' + #13#10 +
-    'Sollte ein Fehler kommen, meldet euch in den Browser-Einstellungen unter' + #13#10 +
-    '„Entwicklerkontakt“: paul.hubacek1@gmail.com';
+  WizardForm.WelcomeLabel2.Caption := 'Modern. Privat. Ressourcenschonend.' + #13#10 +
+    'Open Source Browser für Windows x64.' + #13#10 +
+    'Bei einer bestehenden Installation kannst du Orvian reparieren, aktualisieren oder deinstallieren.' + #13#10 +
+    'Entwicklerkontakt: paul.hubacek1@gmail.com';
   WizardForm.WelcomeLabel1.Font.Size := 22;
   WizardForm.WelcomeLabel1.Font.Style := [fsBold];
+
+  MaintenancePage := CreateInputOptionPage(wpWelcome,
+    'Orvian ist bereits installiert',
+    'Was möchtest du mit Orvian machen?',
+    'Wähle eine Aktion und klicke auf Weiter:', True, False);
+  MaintenancePage.Add('Orvian reparieren');
+  MaintenancePage.Add('Orvian updaten');
+  MaintenancePage.Add('Orvian deinstallieren');
+  MaintenancePage.SelectedValueIndex := 1;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := (Assigned(MaintenancePage)) and (PageID = MaintenancePage.ID) and (not ExistingInstallation);
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  ResultCode: Integer;
+  Uninstaller: String;
+begin
+  Result := True;
+
+  if (Assigned(MaintenancePage)) and (CurPageID = MaintenancePage.ID) then
+  begin
+    MaintenanceAction := MaintenancePage.SelectedValueIndex;
+    if MaintenanceAction = 2 then
+    begin
+      Uninstaller := ExpandConstant('{app}\unins000.exe');
+      if FileExists(Uninstaller) then
+      begin
+        if MsgBox('Orvian wird jetzt deinstalliert. Möchtest du fortfahren?', mbConfirmation, MB_YESNO) = IDYES then
+        begin
+          Exec(Uninstaller, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+          WizardForm.Close;
+        end;
+      end
+      else
+        MsgBox('Der Orvian-Deinstaller wurde nicht gefunden. Bitte installiere Orvian zuerst erneut, um die Installation zu reparieren.', mbError, MB_OK);
+      Result := False;
+    end;
+  end;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if Assigned(MaintenancePage) and (CurPageID = MaintenancePage.ID) then
+    WizardForm.NextButton.Caption := 'Weiter';
+
+  if Assigned(MaintenancePage) and (MaintenancePage.SelectedValueIndex = 0) then
+    WizardForm.WelcomeLabel2.Caption := 'Reparatur: Orvian-Dateien werden neu installiert. Deine lokalen Daten bleiben erhalten.' + #13#10 +
+      'Entwicklerkontakt: paul.hubacek1@gmail.com'
+  else if Assigned(MaintenancePage) and (MaintenancePage.SelectedValueIndex = 1) then
+    WizardForm.WelcomeLabel2.Caption := 'Update: Die neue Orvian-Version wird über die bestehende Installation installiert.' + #13#10 +
+      'Entwicklerkontakt: paul.hubacek1@gmail.com'
+  else if Assigned(MaintenancePage) and (MaintenancePage.SelectedValueIndex = 2) then
+    WizardForm.WelcomeLabel2.Caption := 'Deinstallation: Orvian und seine Installation werden entfernt.' + #13#10 +
+      'Lokale WebView2-Daten können nach der Deinstallation separat bestehen bleiben.'
 end;
