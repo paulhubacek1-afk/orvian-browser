@@ -19,36 +19,21 @@ public sealed class UpdateChecker
     public Version CurrentVersion =>
         Assembly.GetEntryAssembly()?.GetName().Version is { } version
             ? new Version(version.Major, version.Minor, Math.Max(0, version.Build))
-            : new Version(0, 3, 0);
+            : new Version(0, 3, 1);
 
     public async Task<UpdateInfo?> GetLatestAsync(CancellationToken cancellationToken = default)
     {
-        Version? publishedVersion = null;
-        string? installerUrl = null;
+        // First ask the raw VERSION.txt for the authoritative remote version. A timestamp
+        // prevents stale proxy/CDN responses from making the browser appear up to date.
+        var remoteVersion = await GetRemoteVersionAsync(cancellationToken);
+        if (remoteVersion == null || remoteVersion <= CurrentVersion) return null;
 
-        // Read VERSION.txt with a cache-buster first. This detects a newer stable build
-        // even during the small window before GitHub has refreshed the latest release.
+        // Only resolve the release asset after a newer version was confirmed. This keeps
+        // update checks tiny and still works when the release is created a little later.
         try
         {
-            var cacheBust = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"{VersionUrl}?v={cacheBust}");
-            request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
-            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (response.IsSuccessStatusCode)
-            {
-                var text = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
-                if (Version.TryParse(text, out var remoteVersion))
-                    publishedVersion = remoteVersion;
-            }
-        }
-        catch { }
-
-        // Fetch the latest release independently so an installer can be used as soon as
-        // the CI release exists. Use the newer of VERSION.txt and the published release.
-        try
-        {
-            var cacheBust = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"{ReleasesApi}?v={cacheBust}");
+            var releaseUrl = ReleasesApi + "?orvian=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            using var request = new HttpRequestMessage(HttpMethod.Get, releaseUrl);
             request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
             using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (response.IsSuccessStatusCode)
@@ -56,15 +41,10 @@ public sealed class UpdateChecker
                 await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
                 using var json = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
                 var root = json.RootElement;
-                var tag = root.TryGetProperty("tag_name", out var tagElement)
-                    ? tagElement.GetString()?.TrimStart('v', 'V')
-                    : null;
-
-                if (Version.TryParse(tag, out var releaseVersion))
+                var tag = root.TryGetProperty("tag_name", out var tagElement) ? tagElement.GetString()?.TrimStart('v', 'V') : null;
+                if (Version.TryParse(tag, out var releaseVersion) && releaseVersion >= remoteVersion)
                 {
-                    if (publishedVersion == null || releaseVersion > publishedVersion)
-                        publishedVersion = releaseVersion;
-
+                    string? installerUrl = null;
                     if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
                     {
                         foreach (var asset in assets.EnumerateArray())
@@ -73,24 +53,33 @@ public sealed class UpdateChecker
                             if (name?.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) != true) continue;
                             if (asset.TryGetProperty("browser_download_url", out var urlElement))
                             {
-                                var url = urlElement.GetString();
-                                if (!string.IsNullOrWhiteSpace(url) && releaseVersion == publishedVersion)
-                                {
-                                    installerUrl = url;
-                                    break;
-                                }
+                                installerUrl = urlElement.GetString();
+                                break;
                             }
                         }
                     }
+                    return new UpdateInfo(releaseVersion, installerUrl);
                 }
             }
         }
         catch { }
 
-        if (publishedVersion == null || publishedVersion <= CurrentVersion)
-            return null;
+        return new UpdateInfo(remoteVersion, null);
+    }
 
-        return new UpdateInfo(publishedVersion, installerUrl);
+    private static async Task<Version?> GetRemoteVersionAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var url = VersionUrl + "?orvian=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            var text = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
+            return Version.TryParse(text, out var version) ? version : null;
+        }
+        catch { return null; }
     }
 
     public async Task<string?> DownloadInstallerAsync(UpdateInfo update, CancellationToken cancellationToken = default)
@@ -108,7 +97,7 @@ public sealed class UpdateChecker
     private static HttpClient CreateHttpClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Orvian-Browser/0.3");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Orvian-Browser/0.3.1");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
