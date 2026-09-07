@@ -9,7 +9,7 @@ public sealed record UpdateInfo(Version Version, string InstallerUrl);
 public sealed class UpdateChecker
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
-    private const string ReleasesApi = "https://api.github.com/repos/paulhubacek1-afk/orvian-browser/releases/latest";
+    private const string ReleasesApi = "https://api.github.com/repos/paulhubacek1-afk/orvian-browser/releases?per_page=20";
 
     public Version CurrentVersion =>
         Assembly.GetEntryAssembly()?.GetName().Version is { } version
@@ -18,34 +18,54 @@ public sealed class UpdateChecker
 
     public async Task<UpdateInfo?> GetLatestAsync(CancellationToken cancellationToken = default)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, ReleasesApi);
-        request.Headers.UserAgent.ParseAdd("Orvian-Browser");
-        request.Headers.Accept.ParseAdd("application/vnd.github+json");
-        using var response = await Http.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode) return null;
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var json = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-        var root = json.RootElement;
-        var tag = root.GetProperty("tag_name").GetString()?.TrimStart('v', 'V');
-        if (!Version.TryParse(tag, out var latestVersion)) return null;
-
-        string? installerUrl = null;
-        if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+        try
         {
-            foreach (var asset in assets.EnumerateArray())
-            {
-                var name = asset.TryGetProperty("name", out var nameElement) ? nameElement.GetString() : null;
-                if (name?.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) == true &&
-                    asset.TryGetProperty("browser_download_url", out var urlElement))
-                {
-                    installerUrl = urlElement.GetString();
-                    break;
-                }
-            }
-        }
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                ReleasesApi + "&cache=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            request.Headers.UserAgent.ParseAdd("Orvian-Browser/0.2");
+            request.Headers.Accept.ParseAdd("application/vnd.github+json");
+            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
 
-        return string.IsNullOrWhiteSpace(installerUrl) ? null : new UpdateInfo(latestVersion, installerUrl);
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var json = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            if (json.RootElement.ValueKind != JsonValueKind.Array) return null;
+
+            UpdateInfo? best = null;
+            foreach (var release in json.RootElement.EnumerateArray())
+            {
+                if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
+                if (release.TryGetProperty("prerelease", out var pre) && pre.GetBoolean()) continue;
+
+                var tag = release.TryGetProperty("tag_name", out var tagElement) ? tagElement.GetString()?.TrimStart('v', 'V') : null;
+                if (!Version.TryParse(tag, out var version)) continue;
+
+                string? installerUrl = null;
+                if (release.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var asset in assets.EnumerateArray())
+                    {
+                        var name = asset.TryGetProperty("name", out var nameElement) ? nameElement.GetString() : null;
+                        if (name?.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) != true) continue;
+                        if (asset.TryGetProperty("browser_download_url", out var urlElement))
+                        {
+                            installerUrl = urlElement.GetString();
+                            if (!string.IsNullOrWhiteSpace(installerUrl)) break;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(installerUrl)) continue;
+                if (best is null || version > best.Version) best = new UpdateInfo(version, installerUrl);
+            }
+
+            return best;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<string?> DownloadInstallerAsync(UpdateInfo update, CancellationToken cancellationToken = default)
