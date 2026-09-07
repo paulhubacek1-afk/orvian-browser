@@ -99,13 +99,10 @@ public sealed class Blocker
         return false;
     }
 
-    public bool IsBlockedHost(string uri)
-    {
-        if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed) || string.IsNullOrWhiteSpace(parsed.Host)) return false;
-        var host = NormalizeHost(parsed.Host);
-        if (IsLocalOrPrivateHost(host) || IsAllowed(host)) return false;
-        lock (_sync) return MatchesHostFast(host);
-    }
+    // Document navigations are deliberately never blocked here.
+    // The blocker is a resource filter: ads, trackers and tracking endpoints are blocked,
+    // but a real destination such as google.com must always remain reachable.
+    public bool IsBlockedHost(string uri) => false;
 
     public void AllowSite(string host)
     {
