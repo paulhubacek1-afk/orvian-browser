@@ -3,14 +3,14 @@
 ## [1.0.1] - Big bugfix
 
 ### Stability
-- Removed the 250 ms tab synchronization polling loop; tab UI synchronization is now event-driven with a low-frequency safety reconciliation.
+- Removed the 250 ms tab synchronization polling loop; tab UI synchronization is now event-driven where possible with a low-frequency safety reconciliation.
 - Added cleanup for UI timers when the main window closes.
 - Chromium-style tab keyboard navigation remains available without continuously rebuilding the tab strip.
 - New tabs are reconciled after tab creation actions so their headers cannot silently disappear.
 
 ### Updates
 - Startup update checking remains immediate and is backed by the stable-release scan plus VERSION.txt fallback.
-- Release builds now have a mandatory version/changelog validation and a real Release-mode compile before packaging.
+- Release builds now have mandatory version/changelog validation and a real Release-mode compile before packaging.
 - GitHub Actions now separates PR/build validation from actual release publishing.
 - Installer SHA-256 checksums are generated for every verified release build.
 
@@ -66,3 +66,11 @@
 - Download-Dateien bekommen bei Namenskonflikten automatisch einen freien Dateinamen.
 
 ### UI / UX
+- Einstellungen vollständig überarbeitet: klarere Navigation, Kartenlayout und weniger visuelles Durcheinander.
+- Neue Startseite mit stärkerem Orvian-Branding und modernerem Hero-Bereich.
+- Panda reagiert jetzt dauerhaft: Blinzeln, Schweben und zufällige kleine Reaktionen statt einer einmaligen Begrüßungsanimation.
+- Tab-Leiste zeigt mehrere echte Tabs mit aktivem Zustand und eigenen Schließen-Buttons.
+
+## [0.2.1]
+
+Vorherige Orvian-Version.
