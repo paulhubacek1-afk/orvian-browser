@@ -63,18 +63,19 @@
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="28,0,8,0">
                     <TextBlock Text="Willkommen beim neuen Update!" FontSize="34" FontWeight="Bold" Foreground="#182332" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="VersionText" Text="Orvian 0.2.0 ist bereit." FontSize="18" Foreground="#1A73E8" FontWeight="SemiBold" Margin="0,8,0,16"/>
-                    <TextBlock Text="Dein Panda hat ein paar richtig große Neuerungen mitgebracht." FontSize="14" Foreground="#687587" Margin="0,0,0,20" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="VersionText" Text="Orvian 1.0.0 ist bereit." FontSize="18" Foreground="#1A73E8" FontWeight="SemiBold" Margin="0,8,0,16"/>
+                    <TextBlock Text="Eine stabile Orvian-Version mit sauberer Web-Navigation und den wichtigsten Browser-Grundfunktionen." FontSize="14" Foreground="#687587" Margin="0,0,0,20" TextWrapping="Wrap"/>
 
                     <Border Background="#F3F8FD" CornerRadius="16" Padding="16" Margin="0,0,0,22">
                         <StackPanel>
-                            <TextBlock Text="Neu in diesem Update" FontSize="15" FontWeight="Bold" Foreground="#233043" Margin="0,0,0,10"/>
+                            <TextBlock Text="Enthalten" FontSize="15" FontWeight="Bold" Foreground="#233043" Margin="0,0,0,10"/>
                             <TextBlock Text="🐼 Animiertes Panda-Maskottchen" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="⌕ Command Palette &amp; neue interne Orvian-Seiten" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
+                            <TextBlock Text="⌕ Command Palette &amp; interne Orvian-Seiten" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
                             <TextBlock Text="📚 Verlauf &amp; Lesezeichen" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
                             <TextBlock Text="📥 Download-Übersicht" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="🛡 Datenschutz-Center &amp; Berechtigungen" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="⚡ Verbesserte Navigation, IP-Adressen &amp; Schutzfilter" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
+                            <TextBlock Text="🛡 Datenschutz &amp; Berechtigungen" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
+                            <TextBlock Text="🌐 HTML-Dateien, data: und normale Websites" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
+                            <TextBlock Text="↗ Echte neue Tabs für neue Fenster/Links" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
                         </StackPanel>
                     </Border>
 
