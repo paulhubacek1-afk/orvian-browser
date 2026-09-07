@@ -7,14 +7,16 @@ using System.Windows.Threading;
 
 namespace Orvian.Browser;
 
-public enum PandaMood { Idle, Happy, Thinking, Loading, Error, Success, Privacy, Sleep, Update }
+public enum PandaMood { Idle, Happy, Thinking, Loading, Error, Success, Privacy, Sleep, Update, Curious, Excited }
 
 public sealed class PandaControl : Grid
 {
     private readonly Ellipse _leftEye;
     private readonly Ellipse _rightEye;
     private readonly DispatcherTimer _blinkTimer;
+    private readonly DispatcherTimer _activityTimer;
     private Storyboard? _active;
+    private readonly Random _random = new();
 
     public PandaControl()
     {
@@ -46,9 +48,13 @@ public sealed class PandaControl : Grid
         AddEllipse(canvas, 29, 94, 12, 6, new SolidColorBrush(Color.FromRgb(255, 167, 183)), opacity: 0.6);
         AddEllipse(canvas, 97, 94, 12, 6, new SolidColorBrush(Color.FromRgb(255, 167, 183)), opacity: 0.6);
 
-        _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4.5) };
+        _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.7) };
         _blinkTimer.Tick += (_, _) => Blink();
         _blinkTimer.Start();
+
+        _activityTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+        _activityTimer.Tick += (_, _) => RandomMicroAction();
+        _activityTimer.Start();
         StartIdle();
     }
 
@@ -62,9 +68,20 @@ public sealed class PandaControl : Grid
 
     private void Blink()
     {
-        var a = new DoubleAnimation(1, 0.05, TimeSpan.FromMilliseconds(80)) { AutoReverse = true };
+        var a = new DoubleAnimation(1, 0.05, TimeSpan.FromMilliseconds(90)) { AutoReverse = true };
         _leftEye.BeginAnimation(OpacityProperty, a);
         _rightEye.BeginAnimation(OpacityProperty, a.Clone());
+    }
+
+    private void RandomMicroAction()
+    {
+        Play(_random.Next(4) switch
+        {
+            0 => PandaMood.Curious,
+            1 => PandaMood.Happy,
+            2 => PandaMood.Thinking,
+            _ => PandaMood.Idle
+        });
     }
 
     public void StartIdle()
@@ -86,15 +103,25 @@ public sealed class PandaControl : Grid
     {
         _active?.Stop(this);
         _active = new Storyboard();
-        var duration = TimeSpan.FromMilliseconds(420);
-        var y = mood switch { PandaMood.Happy or PandaMood.Success => -22, PandaMood.Update => -28, PandaMood.Error => 3, PandaMood.Sleep => 5, _ => -10 };
+        var duration = TimeSpan.FromMilliseconds(mood is PandaMood.Excited ? 650 : 420);
+        var y = mood switch
+        {
+            PandaMood.Happy or PandaMood.Success or PandaMood.Excited => -22,
+            PandaMood.Update => -28,
+            PandaMood.Curious => -12,
+            PandaMood.Error => 3,
+            PandaMood.Sleep => 5,
+            _ => -10
+        };
         var bounce = new DoubleAnimation(0, y, duration) { AutoReverse = true, EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
         Storyboard.SetTarget(bounce, this); Storyboard.SetTargetProperty(bounce, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[2].(TranslateTransform.Y)")); _active.Children.Add(bounce);
-        var sx = new DoubleAnimation(1, mood is PandaMood.Success or PandaMood.Happy ? 1.12 : 0.96, duration) { AutoReverse = true };
+        var sx = new DoubleAnimation(1, mood is PandaMood.Success or PandaMood.Happy or PandaMood.Excited ? 1.12 : 0.96, duration) { AutoReverse = true };
         Storyboard.SetTarget(sx, this); Storyboard.SetTargetProperty(sx, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)")); _active.Children.Add(sx);
-        var sy = new DoubleAnimation(1, mood is PandaMood.Success or PandaMood.Happy ? 0.9 : 1.04, duration) { AutoReverse = true };
+        var sy = new DoubleAnimation(1, mood is PandaMood.Success or PandaMood.Happy or PandaMood.Excited ? 0.9 : 1.04, duration) { AutoReverse = true };
         Storyboard.SetTarget(sy, this); Storyboard.SetTargetProperty(sy, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)")); _active.Children.Add(sy);
-        var rotate = new DoubleAnimation(mood == PandaMood.Error ? -7 : -3, mood == PandaMood.Error ? 7 : 3, duration) { AutoReverse = true };
+        var rotateFrom = mood == PandaMood.Error ? -7 : mood == PandaMood.Curious ? -4 : -3;
+        var rotateTo = mood == PandaMood.Error ? 7 : mood == PandaMood.Curious ? 4 : 3;
+        var rotate = new DoubleAnimation(rotateFrom, rotateTo, duration) { AutoReverse = true };
         Storyboard.SetTarget(rotate, this); Storyboard.SetTargetProperty(rotate, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[1].(RotateTransform.Angle)")); _active.Children.Add(rotate);
         _active.Completed += (_, _) => StartIdle();
         _active.Begin(this, true);
