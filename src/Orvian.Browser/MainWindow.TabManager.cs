@@ -73,7 +73,6 @@ public partial class MainWindow
             var plus = FindVisual<Button>(Chrome, b => Equals(b.Content?.ToString(), "+"));
             var strip = plus is null ? null : FindParent<StackPanel>(plus);
             if (strip is null) return;
-
             strip.Children.Clear();
             strip.Children.Add(CreateNewTabButton());
         }
@@ -95,6 +94,7 @@ public partial class MainWindow
         _managedTabs.Add(tab);
         _activeManagedTab = tab;
         BrowserView.Visibility = Visibility.Visible;
+        CreateManagedTabVisual(tab);
         UpdateManagedTabBar();
     }
 
@@ -167,7 +167,6 @@ public partial class MainWindow
             }
 
             UpdateManagedTabVisual(tab);
-
             if (ReferenceEquals(tab, _activeManagedTab))
             {
                 BrowserView = tab.View;
@@ -193,11 +192,9 @@ public partial class MainWindow
         if (!string.IsNullOrWhiteSpace(e.Uri)) tab.View.CoreWebView2?.Navigate(e.Uri);
     }
 
-    private async void ManagedWebMessageReceived(OrvianTab tab, CoreWebView2WebMessageReceivedEventArgs e)
+    private void ManagedWebMessageReceived(OrvianTab tab, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        if (!ReferenceEquals(tab, _activeManagedTab)) return;
-        WebMessageReceived(tab.View.CoreWebView2, e);
-        await Task.CompletedTask;
+        if (ReferenceEquals(tab, _activeManagedTab)) WebMessageReceived(tab.View.CoreWebView2, e);
     }
 
     private void ManagedDownloadStarting(OrvianTab tab, CoreWebView2DownloadStartingEventArgs e)
@@ -207,10 +204,8 @@ public partial class MainWindow
 
     private void ManagedPermissionRequested(OrvianTab tab, CoreWebView2PermissionRequestedEventArgs e)
     {
-        if (ReferenceEquals(tab, _activeManagedTab))
-            PermissionRequested(tab.View.CoreWebView2, e);
-        else
-            e.State = CoreWebView2PermissionState.Deny;
+        if (ReferenceEquals(tab, _activeManagedTab)) PermissionRequested(tab.View.CoreWebView2, e);
+        else e.State = CoreWebView2PermissionState.Deny;
     }
 
     private async Task OpenManagedTabAsync()
@@ -386,7 +381,6 @@ public partial class MainWindow
         if (tab.Visual?.Child is not Grid grid) return;
         var title = grid.Children.OfType<TextBlock>().FirstOrDefault(x => ReferenceEquals(x.Tag, tab));
         if (title != null) title.Text = string.IsNullOrWhiteSpace(tab.Title) ? "Neuer Tab" : tab.Title;
-
         var active = ReferenceEquals(tab, _activeManagedTab);
         tab.Visual.Background = new SolidColorBrush(active ? Color.FromRgb(255, 255, 255) : Color.FromRgb(239, 244, 250));
         tab.Visual.BorderBrush = new SolidColorBrush(active ? Color.FromRgb(47, 107, 255) : Color.FromRgb(213, 222, 233));
