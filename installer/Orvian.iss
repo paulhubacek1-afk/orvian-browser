@@ -42,6 +42,7 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Orvian Browser starten"; Flags:
 var
   MaintenancePage: TInputOptionWizardPage;
   MaintenanceAction: Integer;
+  HadExistingInstallation: Boolean;
 
 function ExistingInstallation: Boolean;
 var
@@ -67,6 +68,7 @@ end;
 
 procedure InitializeWizard;
 begin
+  HadExistingInstallation := ExistingInstallation;
   MaintenanceAction := 1;
 
   WizardForm.WelcomeLabel1.Caption := 'Willkommen bei Orvian!';
@@ -89,7 +91,7 @@ end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
-  Result := (Assigned(MaintenancePage)) and (PageID = MaintenancePage.ID) and (not ExistingInstallation);
+  Result := (Assigned(MaintenancePage)) and (PageID = MaintenancePage.ID) and (not HadExistingInstallation);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
@@ -122,7 +124,7 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-  if (CurStep = ssPostInstall) and (MaintenanceAction = 1) and ExistingInstallation then
+  if (CurStep = ssPostInstall) and (MaintenanceAction = 1) and HadExistingInstallation then
     WritePostUpdateMarker;
 end;
 
