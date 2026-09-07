@@ -1,14 +1,11 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
 namespace Orvian.Browser;
 
-// Small runtime polish layer for the browser UI. It intentionally lives outside the
-// main window implementation so visual fixes do not complicate navigation logic.
 public partial class MainWindow
 {
     static MainWindow()
@@ -21,17 +18,28 @@ public partial class MainWindow
     {
         if (sender is not MainWindow window) return;
 
-        // The native Windows title bar already owns close/minimize/maximize.
-        // The redesigned XAML no longer renders duplicate window buttons; this also
-        // protects existing installations whose XAML is still cached during an update.
-        foreach (var panel in FindVisualChildren<StackPanel>(window))
+        // The panda is browser chrome, never part of a webpage. Re-parent it into the
+        // dedicated bottom-right overlay so it can never appear in the tab/title area.
+        window.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
         {
-            var buttons = panel.Children.OfType<Button>().ToList();
-            if (buttons.Any(b => b.Content?.ToString() == "—") && buttons.Any(b => b.Content?.ToString() == "□"))
-                foreach (var button in buttons) button.Visibility = Visibility.Collapsed;
-        }
+            try
+            {
+                if (window._panda != null && window.PandaLayer != null && window._panda.Parent is Panel oldParent)
+                {
+                    oldParent.Children.Remove(window._panda);
+                    window.PandaLayer.Children.Add(window._panda);
+                }
+                if (window._panda != null)
+                {
+                    window._panda.HorizontalAlignment = HorizontalAlignment.Right;
+                    window._panda.VerticalAlignment = VerticalAlignment.Bottom;
+                    window._panda.Margin = new Thickness(0, 0, 24, 22);
+                }
+            }
+            catch { }
+        }));
 
-        // Check often enough to feel live, while keeping network usage tiny.
+        // Keep a single live update timer.
         window._updateTimer?.Stop();
         window._updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(15) };
         window._updateTimer.Tick += async (_, _) => await window.CheckForUpdatesAsync();
@@ -66,8 +74,6 @@ public partial class MainWindow
         var tab = window.TabFor(core);
         if (tab == null || !tab.InternalPage) return;
 
-        // NavigateToString creates an implementation-level data: document. Never show that
-        // implementation detail to the user.
         window.UpdateTabTitle(tab, tab.Title);
         if (tab == window._activeTab)
         {
@@ -83,6 +89,7 @@ public partial class MainWindow
             };
         }
 
+        // Remove any legacy in-page panda that may still exist in cached/new-tab markup.
         if (tab.Title == "Neuer Tab")
         {
             const string script = """
@@ -100,12 +107,10 @@ public partial class MainWindow
                         .hero{display:grid;grid-template-columns:84px 1fr;gap:24px;align-items:center;margin:20px 0 34px}
                         .hero:before{content:'O';display:flex;align-items:center;justify-content:center;width:84px;height:84px;border-radius:28px;background:linear-gradient(145deg,#2f6bff,#6a9dff);color:white;font-size:44px;font-weight:800;box-shadow:0 18px 45px rgba(47,107,255,.28)}
                         .panda{display:none!important}.eyebrow{font-size:11px;letter-spacing:.2em;font-weight:800;color:#2f6bff}.hero h1{font-size:52px;line-height:1.02;margin:6px 0 12px;letter-spacing:-.03em}.hero p{font-size:18px;color:#65738b;margin:0}
-                        .search{display:flex;max-width:890px;background:rgba(255,255,255,.96);border:1px solid #cbd8e8;border-radius:24px;padding:8px;box-shadow:0 18px 50px rgba(51,83,125,.14);backdrop-filter:blur(10px)}
+                        .search{display:flex;max-width:890px;background:rgba(255,255,255,.96);border:1px solid #cbd8e8;border-radius:24px;padding:8px;box-shadow:0 18px 50px rgba(51,83,125,.14)}
                         .search input{flex:1;border:0;outline:0;font-size:17px;padding:14px 16px;background:transparent}.search button{width:56px;border:0;border-radius:17px;background:#2f6bff;color:#fff;font-size:24px;cursor:pointer}
                         .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:22px}.card{border:1px solid rgba(207,220,235,.95);background:rgba(255,255,255,.86);border-radius:20px;padding:21px;text-align:left;cursor:pointer;box-shadow:0 11px 30px rgba(40,63,95,.07);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.card:hover{transform:translateY(-4px);box-shadow:0 19px 42px rgba(40,63,95,.13);border-color:#b9cdf1}.card b,.card span{display:block}.card b{font-size:16px}.card span{color:#718096;font-size:13px;margin-top:6px}
                         .tip{margin-top:22px;padding:13px 16px;border:1px solid #d8e3ef;border-radius:14px;background:rgba(255,255,255,.6);color:#748096;font-size:13px;max-width:890px}
-                        @media(max-width:900px){main{padding:44px 24px}.grid{grid-template-columns:1fr 1fr}.hero h1{font-size:40px}}
-                        @media(max-width:650px){.grid{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.hero:before{width:68px;height:68px;border-radius:22px;font-size:34px}.hero h1{font-size:34px}}
                     `;
                     document.head.appendChild(style);
                     const eyebrow=document.querySelector('.eyebrow'); if(eyebrow) eyebrow.textContent='ORVIAN BROWSER';
