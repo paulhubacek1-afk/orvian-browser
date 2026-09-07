@@ -23,7 +23,6 @@ DisableWelcomePage=no
 DisableProgramGroupPage=yes
 CloseApplications=yes
 CloseApplicationsFilter=Orvian.exe
-UninstallDisplayIcon={app}\{#MyAppExeName}
 SetupIconFile=..\assets\orvian.ico
 
 [Files]
@@ -48,7 +47,7 @@ function ExistingInstallation: Boolean;
 var
   DefaultInstallRoot: String;
 begin
-  { Do not use {app} here; it can be uninitialized during wizard startup. }
+  { The application directory is not initialized yet during wizard startup. }
   DefaultInstallRoot := AddBackslash(ExpandConstant('{autopf}')) + 'Orvian Browser';
   Result := FileExists(AddBackslash(DefaultInstallRoot) + '{#MyAppExeName}') or
             FileExists(AddBackslash(DefaultInstallRoot) + 'unins000.exe');
