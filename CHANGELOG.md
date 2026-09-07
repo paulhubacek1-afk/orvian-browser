@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen werden hier versioniert dokumentiert. Jeder veröffentlichte Build bekommt eine eigene Versionsnummer und einen eigenen GitHub-Release-Eintrag.
 
+## [0.2.1] - 2026-09-07
+
+### Installer-Bugfix
+- Kritischen Startfehler des Installers behoben, der beim Öffnen wegen einer zu frühen `{app}`-Konstantenauflösung abstürzte.
+- Den problematischen `UninstallDisplayIcon`-Eintrag entfernt, der den Fehler während des frühen Installer-Starts auslösen konnte.
+- Reparatur-, Update- und Deinstallationslogik bleibt erhalten.
+- 0.2.1 wird als neuer Release veröffentlicht, damit bestehende 0.2.0-Installationen das Update automatisch erkennen können.
+
 ## [0.2.0] - 2026-09-07
 
 ### Browser-Ausbau
