@@ -33,13 +33,14 @@ public partial class MainWindow
         if (_uiFixInitialized) return;
         _uiFixInitialized = true;
 
+        ApplyChromiumChromeVisuals();
         PreviewKeyDown += ChromiumLikeShortcuts;
         PreviewMouseDown += OnMainWindowMouseDown;
         Closed += OnUiFixWindowClosed;
 
-        // The old implementation woke the UI every 250 ms. That was wasteful and
-        // still allowed races while WebView2 was creating a tab. Keep a small
-        // 2-second safety net; normal user actions reconcile immediately.
+        // The old implementation woke the UI every 250 ms. Keep a small 2-second
+        // safety net only for asynchronous WebView2 tab creation; normal actions
+        // reconcile immediately after WPF input processing.
         _tabSafetyTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromSeconds(2)
@@ -56,6 +57,75 @@ public partial class MainWindow
         _tabSafetyTimer = null;
         PreviewKeyDown -= ChromiumLikeShortcuts;
         PreviewMouseDown -= OnMainWindowMouseDown;
+    }
+
+    private void ApplyChromiumChromeVisuals()
+    {
+        var iconFont = new FontFamily("Segoe MDL2 Assets");
+
+        BackButton.Content = "\uE72B";
+        BackButton.FontFamily = iconFont;
+        BackButton.FontSize = 16;
+        BackButton.ToolTip = "Zurück (Alt+←)";
+
+        ForwardButton.Content = "\uE72A";
+        ForwardButton.FontFamily = iconFont;
+        ForwardButton.FontSize = 16;
+        ForwardButton.ToolTip = "Vorwärts (Alt+→)";
+
+        NewTabButton.Content = "+";
+        NewTabButton.FontFamily = new FontFamily("Segoe UI");
+        NewTabButton.FontSize = 20;
+        NewTabButton.FontWeight = FontWeights.Normal;
+
+        foreach (var button in FindVisualChildren<Button>(this))
+        {
+            switch (button.ToolTip?.ToString())
+            {
+                case "Neu laden":
+                    button.Content = "\uE72C";
+                    button.FontFamily = iconFont;
+                    button.FontSize = 15;
+                    break;
+                case "Startseite":
+                    button.Content = "\uE80F";
+                    button.FontFamily = iconFont;
+                    button.FontSize = 15;
+                    break;
+                case "Lesezeichen":
+                    button.Content = "\uE734";
+                    button.FontFamily = iconFont;
+                    button.FontSize = 15;
+                    button.Background = Brushes.Transparent;
+                    button.BorderBrush = Brushes.Transparent;
+                    break;
+                case "Datenschutz-Center":
+                    button.Content = "\uE72E";
+                    button.FontFamily = iconFont;
+                    button.FontSize = 15;
+                    break;
+                case "Menü und Einstellungen":
+                    button.Content = "\uE712";
+                    button.FontFamily = iconFont;
+                    button.FontSize = 16;
+                    break;
+            }
+        }
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject root) where T : DependencyObject
+    {
+        if (root == null) yield break;
+
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T match)
+                yield return match;
+
+            foreach (var descendant in FindVisualChildren<T>(child))
+                yield return descendant;
+        }
     }
 
     private void OnMainWindowMouseDown(object sender, MouseButtonEventArgs e)
