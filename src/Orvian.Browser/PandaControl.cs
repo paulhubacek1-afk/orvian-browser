@@ -23,7 +23,8 @@ public sealed class PandaControl : Grid
     private Storyboard? _active;
     private readonly Random _random = new();
 
-    private static readonly Brush Fur = new SolidColorBrush(Color.FromRgb(25, 29, 37));
+    private static readonly Brush Fur = new SolidColorBrush(Color.FromRgb(24, 28, 36));
+    private static readonly Brush FurSoft = new SolidColorBrush(Color.FromRgb(42, 48, 59));
     private static readonly Brush White = Brushes.White;
     private static readonly Brush Soft = new SolidColorBrush(Color.FromRgb(238, 244, 251));
     private static readonly Brush Accent = new SolidColorBrush(Color.FromRgb(47, 107, 255));
@@ -45,36 +46,90 @@ public sealed class PandaControl : Grid
         var canvas = new Canvas { Width = 126, Height = 126 };
         Children.Add(canvas);
 
-        AddEllipse(canvas, 20, 106, 86, 12, new SolidColorBrush(Color.FromArgb(28, 20, 30, 45)));
-        AddEllipse(canvas, 18, 12, 38, 38, Fur);
-        AddEllipse(canvas, 70, 12, 38, 38, Fur);
-        AddEllipse(canvas, 13, 27, 100, 88, Fur);
-        AddEllipse(canvas, 23, 37, 80, 70, White);
+        // Ground shadow.
+        AddEllipse(canvas, 18, 108, 90, 11, new SolidColorBrush(Color.FromArgb(35, 20, 30, 45)));
 
-        // Eye patches
-        AddEllipse(canvas, 29, 51, 34, 43, Fur, -18);
-        AddEllipse(canvas, 63, 51, 34, 43, Fur, 18);
-        _leftEye = AddEllipse(canvas, 42, 62, 15, 18, White);
-        _rightEye = AddEllipse(canvas, 69, 62, 15, 18, White);
-        _leftPupil = AddEllipse(canvas, 47, 67, 7, 10, Fur);
-        _rightPupil = AddEllipse(canvas, 74, 67, 7, 10, Fur);
+        // Body sits behind the head.
+        AddEllipse(canvas, 36, 78, 54, 42, Fur);
+        AddEllipse(canvas, 43, 83, 40, 30, Soft);
 
-        // Nose + smile
-        AddEllipse(canvas, 57, 79, 12, 8, Fur);
+        // Little feet.
+        AddEllipse(canvas, 27, 99, 31, 20, Fur);
+        AddEllipse(canvas, 68, 99, 31, 20, Fur);
+        AddEllipse(canvas, 34, 104, 16, 7, FurSoft, opacity: .8);
+        AddEllipse(canvas, 76, 104, 16, 7, FurSoft, opacity: .8);
+
+        // Arms with slightly different angles make the mascot feel less like a static icon.
+        AddEllipse(canvas, 23, 76, 25, 39, Fur, -24);
+        AddEllipse(canvas, 78, 76, 25, 39, Fur, 24);
+        AddEllipse(canvas, 28, 101, 15, 15, White, opacity: .92);
+        AddEllipse(canvas, 83, 101, 15, 15, White, opacity: .92);
+
+        // Ears and inner ears.
+        AddEllipse(canvas, 17, 10, 39, 39, Fur);
+        AddEllipse(canvas, 70, 10, 39, 39, Fur);
+        AddEllipse(canvas, 25, 18, 22, 22, FurSoft, opacity: .95);
+        AddEllipse(canvas, 79, 18, 22, 22, FurSoft, opacity: .95);
+
+        // Head and muzzle.
+        AddEllipse(canvas, 12, 25, 102, 91, Fur);
+        AddEllipse(canvas, 21, 35, 84, 73, White);
+        AddEllipse(canvas, 30, 75, 66, 31, Soft, opacity: .72);
+
+        // Eye patches.
+        AddEllipse(canvas, 28, 49, 36, 45, Fur, -18);
+        AddEllipse(canvas, 62, 49, 36, 45, Fur, 18);
+
+        _leftEye = AddEllipse(canvas, 40, 61, 16, 19, White);
+        _rightEye = AddEllipse(canvas, 70, 61, 16, 19, White);
+        _leftPupil = AddEllipse(canvas, 45, 66, 7, 10, Fur);
+        _rightPupil = AddEllipse(canvas, 75, 66, 7, 10, Fur);
+
+        // Eye highlights.
+        AddEllipse(canvas, 47, 67, 2.5, 3.5, White);
+        AddEllipse(canvas, 77, 67, 2.5, 3.5, White);
+
+        // Brows add expression during the tiny rotations/bounces.
+        var leftBrow = new Border
+        {
+            Width = 14,
+            Height = 3,
+            Background = Fur,
+            CornerRadius = new CornerRadius(2),
+            RenderTransform = new RotateTransform(-12)
+        };
+        Canvas.SetLeft(leftBrow, 39);
+        Canvas.SetTop(leftBrow, 54);
+        canvas.Children.Add(leftBrow);
+
+        var rightBrow = new Border
+        {
+            Width = 14,
+            Height = 3,
+            Background = Fur,
+            CornerRadius = new CornerRadius(2),
+            RenderTransform = new RotateTransform(12)
+        };
+        Canvas.SetLeft(rightBrow, 73);
+        Canvas.SetTop(rightBrow, 54);
+        canvas.Children.Add(rightBrow);
+
+        // Nose and friendly smile.
+        AddEllipse(canvas, 57, 80, 12, 8, Fur);
         var mouth = new Path
         {
             Stroke = Fur,
-            StrokeThickness = 2.2,
-            Data = Geometry.Parse("M 54,88 Q 63,96 72,88"),
+            StrokeThickness = 2.4,
+            Data = Geometry.Parse("M 54,89 Q 63,98 72,89"),
             StrokeStartLineCap = PenLineCap.Round,
             StrokeEndLineCap = PenLineCap.Round
         };
         canvas.Children.Add(mouth);
 
-        AddEllipse(canvas, 28, 88, 13, 7, Pink, opacity: .52);
-        AddEllipse(canvas, 85, 88, 13, 7, Pink, opacity: .52);
+        AddEllipse(canvas, 28, 87, 14, 8, Pink, opacity: .48);
+        AddEllipse(canvas, 84, 87, 14, 8, Pink, opacity: .48);
 
-        // Small blue collar badge gives the mascot an actual Orvian identity.
+        // Orvian badge on the belly.
         var badge = new Border
         {
             Width = 24,
@@ -94,14 +149,14 @@ public sealed class PandaControl : Grid
             }
         };
         Canvas.SetLeft(badge, 51);
-        Canvas.SetTop(badge, 96);
+        Canvas.SetTop(badge, 91);
         canvas.Children.Add(badge);
 
-        _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
+        _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.2) };
         _blinkTimer.Tick += (_, _) => Blink();
         _blinkTimer.Start();
 
-        _activityTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(9) };
+        _activityTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8.5) };
         _activityTimer.Tick += (_, _) => RandomMicroAction();
         _activityTimer.Start();
 
@@ -130,11 +185,13 @@ public sealed class PandaControl : Grid
 
     private void Blink()
     {
-        var animation = new DoubleAnimation(1, .03, TimeSpan.FromMilliseconds(95))
+        var duration = TimeSpan.FromMilliseconds(100);
+        var animation = new DoubleAnimation(1, .04, duration)
         {
             AutoReverse = true,
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
         };
+
         _leftEye.BeginAnimation(OpacityProperty, animation);
         _rightEye.BeginAnimation(OpacityProperty, animation.Clone());
         _leftPupil.BeginAnimation(OpacityProperty, animation.Clone());
@@ -143,12 +200,13 @@ public sealed class PandaControl : Grid
 
     private void RandomMicroAction()
     {
-        Play(_random.Next(5) switch
+        Play(_random.Next(6) switch
         {
             0 => PandaMood.Curious,
             1 => PandaMood.Happy,
             2 => PandaMood.Thinking,
             3 => PandaMood.Excited,
+            4 => PandaMood.Success,
             _ => PandaMood.Idle
         });
     }
@@ -158,7 +216,7 @@ public sealed class PandaControl : Grid
         _active?.Stop(this);
         _active = new Storyboard();
 
-        var bob = new DoubleAnimation(-2.5, 2.5, TimeSpan.FromMilliseconds(1100))
+        var bob = new DoubleAnimation(-2.2, 2.2, TimeSpan.FromMilliseconds(1250))
         {
             AutoReverse = true,
             RepeatBehavior = RepeatBehavior.Forever,
@@ -168,6 +226,16 @@ public sealed class PandaControl : Grid
         Storyboard.SetTargetProperty(bob, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[2].(TranslateTransform.Y)"));
         _active.Children.Add(bob);
 
+        var breathe = new DoubleAnimation(1, 1.018, TimeSpan.FromMilliseconds(1500))
+        {
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+        };
+        Storyboard.SetTarget(breathe, this);
+        Storyboard.SetTargetProperty(breathe, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"));
+        _active.Children.Add(breathe);
+
         _active.Begin(this, true);
     }
 
@@ -176,16 +244,16 @@ public sealed class PandaControl : Grid
         _active?.Stop(this);
         _active = new Storyboard();
 
-        var duration = TimeSpan.FromMilliseconds(mood is PandaMood.Excited ? 700 : 460);
+        var duration = TimeSpan.FromMilliseconds(mood == PandaMood.Excited ? 720 : 480);
         var y = mood switch
         {
-            PandaMood.Happy or PandaMood.Success => -18,
+            PandaMood.Happy or PandaMood.Success => -17,
             PandaMood.Excited => -25,
-            PandaMood.Update => -21,
-            PandaMood.Curious => -8,
+            PandaMood.Update => -20,
+            PandaMood.Curious => -7,
             PandaMood.Error => 2,
             PandaMood.Sleep => 4,
-            _ => -7
+            _ => -5
         };
 
         var bounce = new DoubleAnimation(0, y, duration)
@@ -197,9 +265,10 @@ public sealed class PandaControl : Grid
         Storyboard.SetTargetProperty(bounce, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[2].(TranslateTransform.Y)"));
         _active.Children.Add(bounce);
 
-        var scale = mood is PandaMood.Success or PandaMood.Happy or PandaMood.Excited ? 1.10 : .97;
+        var happy = mood is PandaMood.Success or PandaMood.Happy or PandaMood.Excited;
+        var scale = happy ? 1.085 : .975;
         var sx = new DoubleAnimation(1, scale, duration) { AutoReverse = true };
-        var sy = new DoubleAnimation(1, mood is PandaMood.Success or PandaMood.Happy or PandaMood.Excited ? .92 : 1.02, duration) { AutoReverse = true };
+        var sy = new DoubleAnimation(1, happy ? .93 : 1.02, duration) { AutoReverse = true };
         Storyboard.SetTarget(sx, this);
         Storyboard.SetTarget(sy, this);
         Storyboard.SetTargetProperty(sx, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"));
@@ -207,7 +276,7 @@ public sealed class PandaControl : Grid
         _active.Children.Add(sx);
         _active.Children.Add(sy);
 
-        var tilt = mood == PandaMood.Error ? 7 : mood == PandaMood.Curious ? 4 : 2.5;
+        var tilt = mood == PandaMood.Error ? 8 : mood == PandaMood.Curious ? 5 : mood == PandaMood.Thinking ? -4 : 2.5;
         var rotate = new DoubleAnimation(-tilt, tilt, duration)
         {
             AutoReverse = true,
