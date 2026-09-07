@@ -2,6 +2,30 @@
 
 Alle nennenswerten Änderungen werden hier versioniert dokumentiert. Jeder veröffentlichte Build bekommt eine eigene Versionsnummer und einen eigenen GitHub-Release-Eintrag.
 
+## [0.2.0] - 2026-09-07
+
+### Browser-Ausbau
+- Eigene Orvian-New-Tab-Seite mit Suche und Schnellzugriffen hinzugefügt.
+- Interne `orvian://`-Seiten für New Tab, Verlauf, Lesezeichen, Downloads, Datenschutz und Berechtigungen ergänzt.
+- Command Palette mit `Ctrl+K` und Suchfilter eingebaut.
+- `Ctrl+L`, `Ctrl+T`, `Ctrl+H`, `Ctrl+J`, `Ctrl+R` und `Ctrl+D` als Browser-Kurzbefehle ergänzt.
+- Lokaler Verlauf mit bis zu 500 eindeutigen Einträgen hinzugefügt.
+- Lokale Lesezeichenablage mit bis zu 500 Einträgen hinzugefügt.
+- Download-Ziel standardmäßig auf den Windows-Downloads-Ordner gesetzt und Download-Ansicht ergänzt.
+- Website-Berechtigungen für Kamera, Mikrofon, Standort und weitere WebView2-Berechtigungsarten werden abgefragt und lokal protokolliert.
+- Datenschutz-Center mit sichtbarer Filterregelanzahl ergänzt.
+
+### Panda-Maskottchen
+- Eigenen animierten Panda-Controller integriert.
+- Idle-Atmung, Blinzeln, Bounce, Squash-&-Stretch und Rotationsanimationen ergänzt.
+- Kontextreaktionen für Start, Erfolg, Laden, Fehler, Updates, Datenschutz und Downloads eingebaut.
+- Der Panda reagiert damit nicht mehr nur beim ersten Start, sondern auf wichtige Browser-Ereignisse.
+
+### Kompatibilität
+- IP-/LAN-Navigation aus 0.1.2 beibehalten und in die neue Navigationslogik integriert.
+- uBlock-Origin-kompatible Netzwerkfilter aus 0.1.2 beibehalten.
+- Self-contained Windows-x64-Build und eingebettetes Orvian-Icon beibehalten.
+
 ## [0.1.2] - 2026-09-07
 
 ### Große Bugfix-Version
