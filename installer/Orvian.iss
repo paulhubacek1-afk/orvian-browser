@@ -1,6 +1,6 @@
 #define MyAppName "Orvian Browser"
 #ifndef MyAppVersion
-#define MyAppVersion "0.2.0"
+#define MyAppVersion "0.2.1"
 #endif
 #define MyAppPublisher "Orvian Project"
 #define MyAppExeName "Orvian.exe"
@@ -47,7 +47,6 @@ function ExistingInstallation: Boolean;
 var
   DefaultInstallRoot: String;
 begin
-  { The application directory is not initialized yet during wizard startup. }
   DefaultInstallRoot := AddBackslash(ExpandConstant('{autopf}')) + 'Orvian Browser';
   Result := FileExists(AddBackslash(DefaultInstallRoot) + '{#MyAppExeName}') or
             FileExists(AddBackslash(DefaultInstallRoot) + 'unins000.exe');
