@@ -2,6 +2,27 @@
 
 Alle nennenswerten Änderungen werden hier versioniert dokumentiert. Jeder veröffentlichte Build bekommt eine eigene Versionsnummer und einen eigenen GitHub-Release-Eintrag.
 
+## [0.2.3] - 2026-09-07
+
+### Große Bugfix-Version
+- Settings-Fenster komplett überarbeitet: klarere Navigation, moderne Karten und bessere Abstände.
+- Passwort-Tresor repariert und als eigene UI verfügbar.
+- Verschlüsselte Zugangsdaten werden als mehrere Einträge über Windows DPAPI gespeichert.
+- Alter Einzel-Eintrag im Tresor bleibt abwärtskompatibel lesbar.
+- Echte mehrere Browser-Tabs eingeführt: jeder Tab besitzt eine eigene WebView2-Sitzung.
+- `Ctrl+T`, `Ctrl+W`, `Ctrl+Tab` und `Ctrl+Shift+Tab` funktionieren jetzt mit den echten Tabs.
+- Neuer Tab wird nicht mehr einfach im bestehenden Tab überschrieben.
+- Saisonale New-Tab-Panda-Animation wird bei jedem neuen Tab ausgeführt.
+- Werbe-/Tracker-Schutz optimiert: Filterlisten werden nicht mehr synchron beim Fensterstart eingelesen.
+- Host-Matching wurde von einem Vollscan auf schnelle Domain-/Suffix-Prüfungen umgestellt.
+- Entscheidungs-Cache begrenzt die wiederholte Filterprüfung für identische Ressourcen.
+- Generische Filterprüfung wird nur noch für verdächtige URLs ausgeführt, um normale Seiten nicht unnötig zu verlangsamen.
+- GitHub-Updateprüfung robuster gemacht: mehrere Releases werden ausgewertet, Drafts/Prereleases ignoriert und das höchste verfügbare Release mit EXE-Asset gewählt.
+- Unabhängiger Update-Watchdog prüft bereits kurz nach dem Start und danach regelmäßig im Hintergrund.
+
+### Bekannte Einschränkung
+- Der Orvian-Blocker ist weiterhin kein vollständiger uBlock-Origin-Parser. Er nutzt kompatible Filterdaten und einen eigenen schnellen Netzwerkfilter.
+
 ## [0.2.2] - 2026-09-07
 
 ### UI & Fenster
