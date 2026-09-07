@@ -14,12 +14,13 @@ public sealed class UpdateChecker
     public Version CurrentVersion =>
         Assembly.GetEntryAssembly()?.GetName().Version is { } version
             ? new Version(version.Major, version.Minor, Math.Max(0, version.Build))
-            : new Version(0, 1, 2);
+            : new Version(0, 2, 2);
 
     public async Task<UpdateInfo?> GetLatestAsync(CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, ReleasesApi);
         request.Headers.UserAgent.ParseAdd("Orvian-Browser");
+        request.Headers.Accept.ParseAdd("application/vnd.github+json");
         using var response = await Http.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode) return null;
 
@@ -50,11 +51,20 @@ public sealed class UpdateChecker
     public async Task<string?> DownloadInstallerAsync(UpdateInfo update, CancellationToken cancellationToken = default)
     {
         var tempPath = Path.Combine(Path.GetTempPath(), $"Orvian-Browser-Setup-{update.Version}.exe");
-        using var response = await Http.GetAsync(update.InstallerUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        if (!response.IsSuccessStatusCode) return null;
-        await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
-        await using var output = File.Create(tempPath);
-        await input.CopyToAsync(output, cancellationToken);
-        return File.Exists(tempPath) ? tempPath : null;
+        try
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+            using var response = await Http.GetAsync(update.InstallerUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+            await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using var output = File.Create(tempPath);
+            await input.CopyToAsync(output, cancellationToken);
+            return File.Exists(tempPath) ? tempPath : null;
+        }
+        catch
+        {
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+            return null;
+        }
     }
 }
