@@ -1,0 +1,52 @@
+<Window x:Class="Orvian.Browser.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Orvian Einstellungen" Width="760" Height="620" MinWidth="650" MinHeight="500"
+        Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
+        WindowStartupLocation="CenterOwner">
+    <TabControl Margin="12">
+        <TabItem Header="Darstellung">
+            <StackPanel Margin="18">
+                <TextBlock Text="Farben &amp; Erscheinungsbild" FontSize="22" FontWeight="Bold" Margin="0,0,0,16"/>
+                <TextBlock Text="Akzentfarbe"/>
+                <TextBox Text="#7C5CFF" Margin="0,5,0,12"/>
+                <TextBlock Text="Theme"/>
+                <ComboBox SelectedIndex="1" Margin="0,5,0,12"><ComboBoxItem>Hell</ComboBoxItem><ComboBoxItem>Dunkel</ComboBoxItem><ComboBoxItem>System</ComboBoxItem></ComboBox>
+                <CheckBox Content="Toolbar kompakt" Margin="0,6"/>
+                <CheckBox Content="Animationen reduzieren" Margin="0,6"/>
+            </StackPanel>
+        </TabItem>
+        <TabItem Header="Schutz &amp; Blocker">
+            <StackPanel Margin="18">
+                <TextBlock Text="Datenschutz" FontSize="22" FontWeight="Bold" Margin="0,0,0,16"/>
+                <CheckBox Content="Werbeblocker aktiv" IsChecked="True" Margin="0,6"/>
+                <CheckBox Content="Tracker-Blocker aktiv" IsChecked="True" Margin="0,6"/>
+                <CheckBox Content="Phishing-Schutz aktiv" IsChecked="True" Margin="0,6"/>
+                <CheckBox Content="Passwort-Leak-Prüfung aktiv" IsChecked="True" Margin="0,6"/>
+                <CheckBox Content="Telemetrie senden" IsChecked="False" Margin="0,6"/>
+                <TextBlock Text="Eigene Filter und Ausnahmen werden lokal gespeichert." Foreground="{StaticResource MutedBrush}" Margin="0,16,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+        </TabItem>
+        <TabItem Header="Wie du diesen Browser nutzt">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="18">
+                    <TextBlock Text="Wie du diesen Browser nutzt" FontSize="22" FontWeight="Bold" Margin="0,0,0,16"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,16">Orvian funktioniert wie ein normaler Browser. Die wichtigsten Aktionen kannst du per Tastatur steuern:</TextBlock>
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <TextBlock Grid.Row="0" Text="Ctrl+T"/><TextBlock Grid.Column="1" Text="Neuen Tab öffnen"/>
+                        <TextBlock Grid.Row="1" Text="Ctrl+W" Margin="0,8,0,0"/><TextBlock Grid.Column="1" Grid.Row="1" Text="Aktuellen Tab schließen" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="2" Text="Ctrl+L" Margin="0,8,0,0"/><TextBlock Grid.Column="1" Grid.Row="2" Text="Adressleiste fokussieren" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="3" Text="Ctrl+R" Margin="0,8,0,0"/><TextBlock Grid.Column="1" Grid.Row="3" Text="Seite neu laden" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="4" Text="Ctrl+F" Margin="0,8,0,0"/><TextBlock Grid.Column="1" Grid.Row="4" Text="Auf der Seite suchen" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="5" Text="Ctrl+H" Margin="0,8,0,0"/><TextBlock Grid.Column="1" Grid.Row="5" Text="Verlauf öffnen" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="6" Text="Ctrl+J" Margin="0,8,0,0"/><TextBlock Grid.Column="1" Grid.Row="6" Text="Downloads öffnen" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="7" Text="Alt+C" Margin="0,8,0,0" FontWeight="Bold"/><TextBlock Grid.Column="1" Grid.Row="7" Text="Browser sofort sperren" Margin="0,8,0,0" FontWeight="Bold"/>
+                        <TextBlock Grid.Row="8" Text="Alt+D" Margin="0,8,0,0" FontWeight="Bold"/><TextBlock Grid.Column="1" Grid.Row="8" Text="Browser entsperren" Margin="0,8,0,0" FontWeight="Bold"/>
+                    </Grid>
+                    <TextBlock Text="Tipp: Rechtsklick auf eine Website kann später eigene Blockierregeln, Ausnahme und 'Als App installieren' anbieten." Margin="0,22,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"/>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+    </TabControl>
+</Window>
