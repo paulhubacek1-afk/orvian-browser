@@ -48,8 +48,7 @@ function ExistingInstallation: Boolean;
 var
   DefaultInstallRoot: String;
 begin
-  { {app} is not safe during the early wizard lifecycle. Use the default
-    installation directory while the maintenance page is being initialized. }
+  { Do not use {app} here; it can be uninitialized during wizard startup. }
   DefaultInstallRoot := AddBackslash(ExpandConstant('{autopf}')) + 'Orvian Browser';
   Result := FileExists(AddBackslash(DefaultInstallRoot) + '{#MyAppExeName}') or
             FileExists(AddBackslash(DefaultInstallRoot) + 'unins000.exe');
