@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Path = System.Windows.Shapes.Path;
 
 namespace Orvian.Browser;
 
