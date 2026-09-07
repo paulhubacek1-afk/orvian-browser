@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.0.0] - Stable
+
+### Release audit
+- Browser chrome reduced to two compact rows; the old extra status/action row is gone.
+- The native Windows window controls are used instead of a second custom set of close/minimize/maximize controls.
+- The animated Panda is isolated in its own browser-content layer and no longer sits in the tab/title area or inside the new-tab HTML.
+- Internal `orvian://` pages no longer expose WebView2's implementation-level `data:` URL in the address bar.
+
+### Web and navigation
+- Normal HTTP/HTTPS documents are never rejected merely because a hostname appears in the ad/tracker filter list.
+- Top-level document requests are left untouched; only subresource requests are eligible for network filtering.
+- Local `file://` HTML, HTM files, `data:text/html` documents and raw HTML input are supported.
+- `target="_blank"` and WebView2 new-window requests now create a real new Orvian tab.
+- `Ctrl+T` creates a new tab without replacing the current one.
+- `Ctrl+W` closes only the active tab and automatically keeps one usable tab open.
+
+### Privacy and performance
+- Filter-list loading is moved off the synchronous startup path.
+- Cached EasyList/EasyPrivacy data is reused while stale lists refresh in the background.
+- The network filter keeps constant-time hostname lookups instead of a full linear rule scan.
+- Filter exceptions are respected for supported host-based rules.
+- Browser history, bookmarks and permissions use serialized asynchronous file access to avoid multi-tab write races.
+
+### Passwords and security
+- Password vault remains encrypted with Windows DPAPI for the current Windows user.
+- Pwned Password checks use the k-anonymous range API.
+- Supported WebView2 permissions are explicitly approved or denied and recorded locally.
+
+### Updates and release
+- Update detection checks a cache-busted remote `VERSION.txt` and GitHub Releases in parallel.
+- A newer remote version can be detected even while its installer asset is still being published.
+- The release workflow validates that `VERSION.txt`, `Version`, `AssemblyVersion` and `FileVersion` match.
+- Release publishing is idempotent: an existing release is updated with the verified installer instead of causing the build to fail.
+- Installer defaults and architecture settings were cleaned up for the final Windows x64 release.
+
 ## [0.3.0] - Stable
 
 ### Fixes
