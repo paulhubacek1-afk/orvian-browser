@@ -2,6 +2,32 @@
 
 Alle nennenswerten Änderungen werden hier versioniert dokumentiert. Jeder veröffentlichte Build bekommt eine eigene Versionsnummer und einen eigenen GitHub-Release-Eintrag.
 
+## [0.2.2] - 2026-09-07
+
+### UI & Fenster
+- Native Windows-Titelleiste entfernt, damit Orvian nur noch eine eigene Fensterleiste mit genau einem Satz Fensterbuttons zeigt.
+- Eigene Titelleiste unterstützt Ziehen und Doppelklick zum Maximieren.
+- Fenstergröße kann weiterhin verändert und das Fenster über die Orvian-Leiste verschoben werden.
+- Gesamter Look auf weichere, rundere Karten und weniger visuelles Rauschen ausgerichtet.
+
+### Panda-Maskottchen
+- Panda komplett freundlicher neu gezeichnet: weichere Formen, größere Augen, Lächeln, kleine Pfoten und Orvian-Schal.
+- Idle-Atmung und leichtes Wippen ergänzt.
+- Zufällige Blickbewegungen und natürliches Blinzeln ergänzt.
+- Erfolgs-, Lade-, Update-, Fehler- und Datenschutzreaktionen mit Squash-&-Stretch und Bounce verbessert.
+- Der gleiche Panda-Stil wird nun auch auf der Willkommens- und Update-Begrüßung verwendet.
+
+### Update-Erlebnis
+- Nach einer erfolgreichen Aktualisierung wird die alte Willkommensseite nicht mehr versehentlich gezeigt.
+- Orvian erkennt einen abgeschlossenen Installer-Update-Lauf über einen lokalen Marker und öffnet danach automatisch eine eigene Update-Begrüßung.
+- Neue Update-Seite zeigt Version, Animationen und die wichtigsten neuen Funktionen.
+- Update-Begrüßung besitzt eine eigene Abschlussanimation und führt danach auf die New-Tab-Seite zurück.
+
+### Kompatibilität
+- Self-contained Windows-x64-Build bleibt erhalten.
+- GitHub-Updateprüfung und automatischer Installer-Start bleiben erhalten.
+- Bestehende Browser-, Datenschutz- und IP/LAN-Funktionen bleiben erhalten.
+
 ## [0.2.1] - 2026-09-07
 
 ### Installer-Bugfix
