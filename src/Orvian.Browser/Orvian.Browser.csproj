@@ -7,7 +7,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Orvian</AssemblyName>
     <RootNamespace>Orvian.Browser</RootNamespace>
-    <ApplicationIcon>..\..\assets\orvian.ico</ApplicationIcon>
     <Platforms>x64</Platforms>
   </PropertyGroup>
 
