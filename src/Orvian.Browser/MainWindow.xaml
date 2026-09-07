@@ -202,7 +202,7 @@
                             <WrapPanel Margin="0,0,0,20">
                                 <Border Background="#F1F5FB" CornerRadius="11" Padding="10,7" Margin="0,0,7,7"><TextBlock Text="Mehrere Tabs" FontWeight="SemiBold" Foreground="#405675"/></Border>
                                 <Border Background="#F1F5FB" CornerRadius="11" Padding="10,7" Margin="0,0,7,7"><TextBlock Text="WebView2 / Chromium" FontWeight="SemiBold" Foreground="#405675"/></Border>
-                                <Border Background="#F1F5FB" CornerRadius="11" Padding="10,7" Margin="0,0,7,7"><TextBlock Text="HTML & Web" FontWeight="SemiBold" Foreground="#405675"/></Border>
+                                <Border Background="#F1F5FB" CornerRadius="11" Padding="10,7" Margin="0,0,7,7"><TextBlock Text="HTML &amp; Web" FontWeight="SemiBold" Foreground="#405675"/></Border>
                                 <Border Background="#F1F5FB" CornerRadius="11" Padding="10,7" Margin="0,0,7,7"><TextBlock Text="Passwort-Tresor" FontWeight="SemiBold" Foreground="#405675"/></Border>
                             </WrapPanel>
                             <Button Content="Los geht's →" Height="46" Width="180" HorizontalAlignment="Left" Click="WelcomeContinue_Click" Style="{StaticResource PrimaryButton}"/>
