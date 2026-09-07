@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: orvian-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -15,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Read version
+      - name: Read and validate version
         id: version
         shell: pwsh
         run: |
@@ -23,6 +27,18 @@ jobs:
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid VERSION.txt: $version" }
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           Write-Host "Orvian version: $version"
+
+      - name: Verify project version matches release version
+        shell: pwsh
+        env:
+          ORVIAN_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          [xml]$project = Get-Content src/Orvian.Browser/Orvian.Browser.csproj
+          $propertyGroup = $project.Project.PropertyGroup | Select-Object -First 1
+          $expected = $env:ORVIAN_VERSION
+          if ([string]$propertyGroup.Version -ne $expected) { throw "csproj Version is $($propertyGroup.Version), expected $expected" }
+          if ([string]$propertyGroup.AssemblyVersion -ne "$expected.0") { throw "AssemblyVersion mismatch." }
+          if ([string]$propertyGroup.FileVersion -ne "$expected.0") { throw "FileVersion mismatch." }
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -96,11 +112,11 @@ jobs:
           if ($match.Success) {
             $match.Value.Trim() | Set-Content release-notes.md -Encoding utf8
           } else {
-            "Orvian Browser v$env:ORVIAN_VERSION`n`nSiehe CHANGELOG.md für die vollständige Änderungsdokumentation." | Set-Content release-notes.md -Encoding utf8
+            "# Orvian Browser v$env:ORVIAN_VERSION`n`nSiehe CHANGELOG.md für die vollständige Änderungsdokumentation." | Set-Content release-notes.md -Encoding utf8
           }
           Get-Content release-notes.md
 
-      - name: Create GitHub release
+      - name: Publish GitHub release
         if: success()
         shell: pwsh
         env:
@@ -110,12 +126,15 @@ jobs:
           $tag = "v$env:ORVIAN_VERSION"
           gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -eq 0) {
-            throw "Release $tag already exists. Bump VERSION.txt before publishing another change."
+            Write-Host "Release $tag already exists; replacing the installer with this verified build."
+            gh release upload $tag dist\Orvian-Browser-Setup-*.exe --repo $env:GITHUB_REPOSITORY --clobber
+            gh release edit $tag --repo $env:GITHUB_REPOSITORY --title "Orvian Browser v$env:ORVIAN_VERSION" --notes-file release-notes.md --latest
+          } else {
+            gh release create $tag dist/Orvian-Browser-Setup-*.exe `
+              --repo $env:GITHUB_REPOSITORY `
+              --title "Orvian Browser v$env:ORVIAN_VERSION" `
+              --notes-file release-notes.md `
+              --latest
           }
-          gh release create $tag dist/Orvian-Browser-Setup-*.exe `
-            --repo $env:GITHUB_REPOSITORY `
-            --title "Orvian Browser v$env:ORVIAN_VERSION" `
-            --notes-file release-notes.md `
-            --latest
 
-# Build trigger: versioned releases with changelog
+# Build trigger: every main push is compiled and verified before the release is updated.
