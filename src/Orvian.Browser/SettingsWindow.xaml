@@ -15,7 +15,7 @@
                     <Button Content="🛡   Datenschutz" HorizontalContentAlignment="Left" Padding="14,12" Click="PrivacySettings_Click"/>
                     <Button Content="🔐   Sicherheit" HorizontalContentAlignment="Left" Padding="14,12" Click="Security_Click"/>
                     <Button Content="⚡   Leistung" HorizontalContentAlignment="Left" Padding="14,12" Click="Performance_Click"/>
-                    <Button Content="⌨   Tastatur & Hilfe" HorizontalContentAlignment="Left" Padding="14,12" Click="Help_Click"/>
+                    <Button Content="⌨   Tastatur &amp; Hilfe" HorizontalContentAlignment="Left" Padding="14,12" Click="Help_Click"/>
                     <Button Content="ⓘ   Über Orvian" HorizontalContentAlignment="Left" Padding="14,12" Click="About_Click"/>
                 </StackPanel>
                 <Border DockPanel.Dock="Bottom" Margin="8,20,8,8" Padding="13" Background="{StaticResource AccentSoftBrush}" CornerRadius="15"><TextBlock Text="Änderungen gelten lokal auf diesem Gerät. Orvian sendet keine Browser-Telemetrie." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="11.5"/></Border>
