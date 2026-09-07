@@ -51,6 +51,14 @@ jobs:
         shell: pwsh
         run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\Orvian.iss'
 
+      - name: Verify installer exists
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "dist\Orvian-Browser-Setup-*.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Installer EXE was not created." }
+          Write-Host "Built: $($installer.FullName)"
+          Write-Host "Size: $([math]::Round($installer.Length / 1MB, 2)) MB"
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
@@ -65,14 +73,20 @@ jobs:
           path: src/Orvian.Browser/bin/Release/net8.0-windows/win-x64/publish/**
           if-no-files-found: error
 
-      - name: Create GitHub release with installer
+      - name: Create stable GitHub release
         if: success()
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v0.1.0-build.${{ github.run_number }}"
+          $tag = "v0.1.0"
+          gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag already exists. Skipping creation."
+            exit 0
+          }
           gh release create $tag dist/Orvian-Browser-Setup-*.exe `
-            --title "Orvian Browser 0.1.0 (Build ${{ github.run_number }})" `
-            --notes "Automated Windows x64 build of Orvian Browser. Offline installer with self-contained .NET and bundled WebView2 runtime." `
-            --prerelease
+            --repo $env:GITHUB_REPOSITORY `
+            --title "Orvian Browser v0.1.0" `
+            --notes "First public Windows x64 release of Orvian Browser. Includes the self-contained application and bundled offline WebView2 runtime." `
+            --latest
