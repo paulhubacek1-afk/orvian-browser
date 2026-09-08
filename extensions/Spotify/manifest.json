@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Spotify",
+  "version": "1.0.0",
+  "description": "Orvian Spotify controller with mini-player, playback controls and a personal queue.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://open.spotify.com/*"],
+  "action": {
+    "default_title": "Spotify – Orvian",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://open.spotify.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
