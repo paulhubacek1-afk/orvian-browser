@@ -85,7 +85,7 @@ public sealed class PandaControl : Grid
 
         // Small nose and smile instead of the previous hard-looking mouth.
         AddEllipse(canvas, 57, 82, 18, 11, Black);
-        var mouth = new Path
+        var mouth = new System.Windows.Shapes.Path
         {
             Stroke = Black,
             StrokeThickness = 2.5,
@@ -251,7 +251,7 @@ public sealed class PandaControl : Grid
         Storyboard.SetTargetProperty(tilt, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[1].(RotateTransform.Angle)"));
         _active.Children.Add(tilt);
 
-        var scale = new DoubleAnimation(1, mood == PandaMood.Excited ? 1.06 : 1.03, duration)
+        var scale = new DoubleAnimation(1, mood == PandaMood.Excited ? 1.08 : 1.035, duration)
         {
             AutoReverse = true,
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
