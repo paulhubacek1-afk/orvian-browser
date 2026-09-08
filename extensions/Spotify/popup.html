@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Spotify – Orvian</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", Arial, sans-serif; }
+    * { box-sizing: border-box; }
+    body { width: 360px; margin: 0; color: #172236; background: #f5f8fc; }
+    header { padding: 18px 20px; background: linear-gradient(135deg,#2f6bff,#6e95ff); color: white; }
+    .brand { font-size: 11px; letter-spacing: .2em; font-weight: 800; opacity: .85; }
+    h1 { margin: 4px 0 0; font-size: 22px; }
+    main { padding: 16px; }
+    .now { background: white; border: 1px solid #d9e2ee; border-radius: 18px; padding: 15px; box-shadow: 0 12px 30px #29496f15; }
+    .title { font-weight: 700; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .artist { margin-top: 4px; color: #6c7b91; font-size: 13px; min-height: 18px; }
+    .controls { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+    button { border: 1px solid #d5deea; background: white; color: #2b3c55; border-radius: 12px; padding: 9px 13px; cursor: pointer; font-weight: 600; }
+    button.primary { background: #2f6bff; border-color: #2f6bff; color: white; }
+    .queue { margin-top: 14px; }
+    .queue-head { display:flex; justify-content:space-between; align-items:center; margin: 0 2px 7px; }
+    .queue-head b { font-size: 13px; }
+    form { display:flex; gap: 7px; }
+    input { min-width: 0; flex: 1; border: 1px solid #d5deea; background: white; border-radius: 11px; padding: 10px; outline: none; }
+    ol { padding-left: 23px; margin: 8px 0 0; }
+    li { padding: 7px 0; font-size: 13px; cursor: pointer; }
+    .muted { color: #8190a3; font-size: 12px; line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <header><div class="brand">ORVIAN EXTENSION</div><h1>Spotify</h1></header>
+  <main>
+    <section class="now">
+      <div id="title" class="title">Spotify öffnen …</div>
+      <div id="artist" class="artist"></div>
+      <div class="controls">
+        <button id="prev">◀◀</button>
+        <button id="play" class="primary">▶</button>
+        <button id="next">▶▶</button>
+      </div>
+    </section>
+
+    <section class="queue">
+      <div class="queue-head"><b>Meine Queue</b><button id="clear">Leeren</button></div>
+      <form id="form"><input id="input" placeholder="Song oder Spotify-URL …"><button class="primary">+</button></form>
+      <ol id="list"></ol>
+      <p class="muted">Die Queue wird lokal in deinem Orvian-Profil gespeichert. Ein Klick auf einen Eintrag öffnet die Suche in Spotify.</p>
+    </section>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
