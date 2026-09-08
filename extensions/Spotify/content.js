@@ -1,5 +1,6 @@
 (() => {
-  const state = { title: "", artist: "", isPlaying: false, url: location.href, updatedAt: Date.now() };
+  const state = { title: "", artist: "", isPlaying: false, url: location.href, updatedAt: 0 };
+  let scheduled = false;
 
   const getText = (selector) => document.querySelector(selector)?.textContent?.trim() || "";
 
@@ -25,14 +26,23 @@
   }
 
   function publish() {
+    scheduled = false;
     const next = readNowPlaying();
     if (!next) return;
+
+    if (next.title === state.title && next.artist === state.artist && next.isPlaying === state.isPlaying && next.url === state.url) return;
     Object.assign(state, next);
     chrome.storage.local.set({ orvianSpotifyState: state });
   }
 
-  const observer = new MutationObserver(() => publish());
+  function schedulePublish() {
+    if (scheduled) return;
+    scheduled = true;
+    setTimeout(publish, 300);
+  }
+
+  const observer = new MutationObserver(schedulePublish);
   observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true });
-  setInterval(publish, 1200);
+  setInterval(publish, 1600);
   publish();
 })();
