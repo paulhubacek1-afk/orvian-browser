@@ -6,16 +6,14 @@ namespace Orvian.Browser;
 
 public partial class MainWindow
 {
-    private readonly object _responsiveUiBootstrap = RegisterResponsiveUi();
     private Border? _updateCard;
     private StackPanel? _updateActions;
     private Viewbox? _pandaViewbox;
 
-    private object RegisterResponsiveUi()
+    private void InitializeResponsiveUiHooks()
     {
         Loaded += ResponsiveUi_Loaded;
         SizeChanged += MainWindow_SizeChanged;
-        return new object();
     }
 
     private void ResponsiveUi_Loaded(object? sender, RoutedEventArgs e)
@@ -88,7 +86,7 @@ public partial class MainWindow
 
                     foreach (var child in actions.Children.OfType<Button>())
                     {
-                        child.Width = tiny ? double.NaN : double.NaN;
+                        child.Width = double.NaN;
                         child.HorizontalAlignment = tiny ? HorizontalAlignment.Stretch : HorizontalAlignment.Right;
                         child.Margin = tiny ? new Thickness(0, 5, 0, 0) : new Thickness(0, 0, 8, 0);
                         child.MinHeight = 44;
