@@ -10,7 +10,13 @@ public partial class UpdateWelcomeWindow : Window
     {
         InitializeComponent();
         VersionText.Text = $"Orvian {version} ist bereit.";
-        Loaded += (_, _) => BeginStoryboard((Storyboard)FindResource("Intro"));
+        Loaded += UpdateWelcomeWindow_Loaded;
+    }
+
+    private void UpdateWelcomeWindow_Loaded(object? sender, RoutedEventArgs e)
+    {
+        BeginStoryboard((Storyboard)FindResource("Intro"));
+        PandaMascot.Play(PandaMood.Update);
     }
 
     private void Continue_Click(object sender, RoutedEventArgs e) => Close();
@@ -25,5 +31,11 @@ public partial class UpdateWelcomeWindow : Window
             });
         }
         catch { }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        PandaMascot?.StopAnimations();
+        base.OnClosed(e);
     }
 }
