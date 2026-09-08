@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.0] - 2026-09-08
+
+### Der große Umbau
+- Kompletter Neustart der Orvian-Browseroberfläche mit modernem Chromium-/WebView2-Stil.
+- Neue Tab-Leiste, Omnibox sowie klare Zurück-, Vorwärts- und Neu-laden-Steuerung.
+- Neue Tab-Seite mit Suche und Schnellzugriffen.
+- Verlauf und Lesezeichen werden lokal im Orvian-Profil gespeichert.
+- Downloads werden zuverlässig in den Windows-Downloads-Ordner geleitet.
+- Browserdaten können direkt aus dem Orvian-Menü gelöscht werden.
+- Lokale `file:`- und `javascript:`-Navigation aus der Adressleiste werden blockiert.
+- WebView2-Sicherheitsstandards bleiben aktiv; Schutzfunktionen werden nicht absichtlich deaktiviert.
+- Legacy-Panda-, Overlay- und Responsive-Partial-Klassen wurden aus dem Browser-Core entfernt.
+- Release-Builds bleiben auf Windows x64 und WebView2 1.0.4129.50 ausgerichtet.
+
 ## [1.1.0] - Extensions & Chromium-feel
 
 ### Extensions
