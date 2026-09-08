@@ -1,3 +1,4 @@
+using Microsoft.Web.WebView2.Core;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,6 +28,8 @@ public partial class MainWindow
         if (_extensionsUiReady) return;
         _extensionsUiReady = true;
 
+        TryPrepareExtensionEnabledEnvironment();
+
         _extensionsButton = new Button
         {
             Content = "🧩",
@@ -50,6 +53,33 @@ public partial class MainWindow
         _spotifyTimer.Start();
     }
 
+    private void TryPrepareExtensionEnabledEnvironment()
+    {
+        if (_browserReady || _environment != null) return;
+
+        try
+        {
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Orvian", "WebView2");
+            Directory.CreateDirectory(folder);
+            var task = Task.Run(async () =>
+            {
+                var options = new CoreWebView2EnvironmentOptions
+                {
+                    AreBrowserExtensionsEnabled = true
+                };
+                return await CoreWebView2Environment.CreateAsync(null, folder, options);
+            });
+            _environment = task.GetAwaiter().GetResult();
+            _browserReady = true;
+            _ = AddTabAsync(true, null);
+        }
+        catch
+        {
+            // MainWindow's normal initializer remains the fallback if WebView2
+            // cannot create an extensions-enabled environment here.
+        }
+    }
+
     private void ExtensionUi_Closed(object? sender, EventArgs e)
     {
         _spotifyTimer?.Stop();
@@ -70,29 +100,22 @@ public partial class MainWindow
             NavigateSpotifyHome();
     }
 
-    internal void NotifyExtensionChanged()
-    {
-        _ = RefreshSpotifyMiniPlayerAsync();
-    }
+    internal void NotifyExtensionChanged() => _ = RefreshSpotifyMiniPlayerAsync();
 
     internal void NavigateSpotifyHome()
     {
         if (_activeTab != null) NavigateExternal(_activeTab, "https://open.spotify.com/");
     }
 
-    internal async Task OpenSpotifySearchAsync(string query)
+    internal Task OpenSpotifySearchAsync(string query)
     {
         var value = query.Trim();
-        if (string.IsNullOrWhiteSpace(value)) return;
-        if (_activeTab == null) return;
+        if (string.IsNullOrWhiteSpace(value) || _activeTab == null) return Task.CompletedTask;
         NavigateExternal(_activeTab, "https://open.spotify.com/search/" + Uri.EscapeDataString(value));
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
-    internal async Task ToggleSpotifyPlaybackAsync()
-    {
-        await ControlSpotifyAsync("playpause");
-    }
+    internal Task ToggleSpotifyPlaybackAsync() => ControlSpotifyAsync("playpause");
 
     internal async Task ControlSpotifyAsync(string command)
     {
@@ -112,8 +135,7 @@ public partial class MainWindow
 
     private async Task RefreshSpotifyMiniPlayerAsync()
     {
-        if (_spotifyMiniPlayer == null || _activeTab?.View.CoreWebView2 == null)
-            return;
+        if (_spotifyMiniPlayer == null || _activeTab?.View.CoreWebView2 == null) return;
 
         var source = _activeTab.View.Source;
         var isSpotify = source?.Host.Equals("open.spotify.com", StringComparison.OrdinalIgnoreCase) == true;
@@ -142,6 +164,17 @@ public partial class MainWindow
         {
             _spotifyMiniPlayer.SetVisible(true);
             _spotifyMiniPlayer.Update("Spotify", "Mini-Player aktiv", false);
+        }
+    }
+
+    private void ExtensionUi_KeyDown(object? sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control &&
+            System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.LeftShift) &&
+            e.Key == System.Windows.Input.Key.E)
+        {
+            OpenExtensionStore();
+            e.Handled = true;
         }
     }
 
