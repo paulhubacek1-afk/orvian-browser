@@ -2,6 +2,7 @@ using Microsoft.Web.WebView2.Core;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -20,6 +21,7 @@ public partial class MainWindow
     {
         Loaded += ExtensionUi_Loaded;
         Closed += ExtensionUi_Closed;
+        PreviewKeyDown += ExtensionUi_KeyDown;
         return new object();
     }
 
@@ -63,10 +65,7 @@ public partial class MainWindow
             Directory.CreateDirectory(folder);
             var task = Task.Run(async () =>
             {
-                var options = new CoreWebView2EnvironmentOptions
-                {
-                    AreBrowserExtensionsEnabled = true
-                };
+                var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
                 return await CoreWebView2Environment.CreateAsync(null, folder, options);
             });
             _environment = task.GetAwaiter().GetResult();
@@ -75,22 +74,16 @@ public partial class MainWindow
         }
         catch
         {
-            // MainWindow's normal initializer remains the fallback if WebView2
-            // cannot create an extensions-enabled environment here.
+            // MainWindow's normal initializer remains the fallback if the
+            // extensions-enabled environment cannot be created.
         }
     }
 
-    private void ExtensionUi_Closed(object? sender, EventArgs e)
-    {
-        _spotifyTimer?.Stop();
-    }
+    private void ExtensionUi_Closed(object? sender, EventArgs e) => _spotifyTimer?.Stop();
 
     internal CoreWebView2Profile? ExtensionProfile => _activeTab?.View.CoreWebView2?.Profile;
 
-    internal void OpenExtensionStore()
-    {
-        new ExtensionStoreWindow(this, _extensionManager).ShowDialog();
-    }
+    internal void OpenExtensionStore() => new ExtensionStoreWindow(this, _extensionManager).ShowDialog();
 
     internal void OpenSpotifyPanel()
     {
@@ -167,11 +160,9 @@ public partial class MainWindow
         }
     }
 
-    private void ExtensionUi_KeyDown(object? sender, System.Windows.Input.KeyEventArgs e)
+    private void ExtensionUi_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control &&
-            System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.LeftShift) &&
-            e.Key == System.Windows.Input.Key.E)
+        if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.E)
         {
             OpenExtensionStore();
             e.Handled = true;
