@@ -14,7 +14,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Chromium-style tab strip. No custom welcome, panda, creator or overlay UI. -->
         <Border Grid.Row="0" Background="{StaticResource ChromeBackground}">
             <Grid Margin="8,0,6,0">
                 <Grid.ColumnDefinitions>
@@ -28,7 +27,6 @@
             </Grid>
         </Border>
 
-        <!-- Navigation / omnibox -->
         <Border Grid.Row="1" Background="{StaticResource ToolbarBackground}" BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Effect="{StaticResource ToolbarShadow}">
             <Grid Margin="8,7">
                 <Grid.ColumnDefinitions>
@@ -41,7 +39,7 @@
                     <Button x:Name="ForwardButton" Content="›" Click="Forward_Click" ToolTip="Vorwärts (Alt+→)" Style="{StaticResource ToolbarButton}"/>
                     <Button x:Name="ReloadButton" Content="↻" Click="Reload_Click" ToolTip="Neu laden (Ctrl+R)" Style="{StaticResource ToolbarButton}"/>
                 </StackPanel>
-                <Border Grid.Column="1" Margin="8,0" Height="40" Background="#F1F3F4" BorderBrush="#F1F3F4" BorderThickness="1" CornerRadius="20">
+                <Border Grid.Column="1" Margin="8,0" Height="40" Background="#F2F5F8" BorderBrush="#E0E6ED" BorderThickness="1" CornerRadius="20">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="34"/>
@@ -62,7 +60,8 @@
 
         <Grid Grid.Row="2" Background="White">
             <ContentControl x:Name="BrowserHost"/>
-            <Border x:Name="MenuPopup" Width="310" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,12,0" Background="White" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="10" Padding="6" Visibility="Collapsed" Panel.ZIndex="100" Effect="{StaticResource ToolbarShadow}">
+
+            <Border x:Name="MenuPopup" Width="310" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,12,0" Background="White" BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="12" Padding="6" Visibility="Collapsed" Panel.ZIndex="100" Effect="{StaticResource ToolbarShadow}">
                 <StackPanel>
                     <Button Content="Neuer Tab    Ctrl+T" Click="MenuNewTab_Click" Style="{StaticResource MenuItemButton}"/>
                     <Button Content="Neues Fenster    Ctrl+N" Click="MenuNewWindow_Click" Style="{StaticResource MenuItemButton}"/>
@@ -74,9 +73,63 @@
                     <Button Content="Einstellungen" Click="MenuSettings_Click" Style="{StaticResource MenuItemButton}"/>
                     <Button Content="Browserdaten löschen…" Click="MenuClearData_Click" Style="{StaticResource MenuItemButton}"/>
                     <Separator Margin="4,3"/>
+                    <Button Content="Creator-Meldung" Click="MenuCreator_Click" Style="{StaticResource MenuItemButton}"/>
                     <Button Content="Über Orvian" Click="MenuAbout_Click" Style="{StaticResource MenuItemButton}"/>
                 </StackPanel>
             </Border>
+        </Grid>
+
+        <!-- Orvian 2.0 first-run experience: animated mascot + creator message -->
+        <Grid x:Name="WelcomeOverlay" Grid.RowSpan="3" Visibility="Collapsed" Background="#660B1020" Panel.ZIndex="500">
+            <Grid>
+                <Border Width="610" Padding="44,38,44,34" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="28" Background="White" Effect="{StaticResource CardShadow}">
+                    <StackPanel>
+                        <TextBlock Text="ORVIAN 2.0" Foreground="{StaticResource Accent}" FontWeight="Bold" FontSize="13" LetterSpacing="2" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Der große Umbau ist da." FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,7,0,4"/>
+                        <TextBlock Text="Schneller. Ruhiger. Moderner. Mit einem Panda, der dich durch Orvian begleitet." TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="15" MaxWidth="500" HorizontalAlignment="Center"/>
+
+                        <Grid Height="190" Margin="0,24,0,8" HorizontalAlignment="Center">
+                            <Grid RenderTransformOrigin="0.5,0.5" x:Name="PandaFloat">
+                                <Grid.RenderTransform>
+                                    <TranslateTransform Y="0"/>
+                                </Grid.RenderTransform>
+                                <Ellipse Width="62" Height="62" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="14,12,0,0"/>
+                                <Ellipse Width="62" Height="62" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,14,0"/>
+                                <Ellipse Width="178" Height="148" Fill="#F8FAFC" Stroke="#E3E8EF" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,18,0,0"/>
+                                <Ellipse Width="28" Height="42" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Left" Margin="43,67,0,0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform><RotateTransform Angle="-28" x:Name="EyePatchLeftRotate"/></Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse Width="28" Height="42" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Right" Margin="0,67,43,0" RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.RenderTransform><RotateTransform Angle="28" x:Name="EyePatchRightRotate"/></Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse Width="10" Height="10" Fill="White" HorizontalAlignment="Left" Margin="50,82,0,0"/>
+                                <Ellipse Width="10" Height="10" Fill="White" HorizontalAlignment="Right" Margin="0,82,50,0"/>
+                                <Ellipse Width="13" Height="10" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Center" Margin="0,102,0,0"/>
+                                <Ellipse Width="6" Height="4" Fill="White" HorizontalAlignment="Center" Margin="0,105,0,0"/>
+                                <Border Width="72" Height="22" Background="#F4E9E4" CornerRadius="11" HorizontalAlignment="Center" Margin="0,118,0,0"/>
+
+                                <Border Width="70" Height="112" Background="#F8FAFC" Stroke="#E3E8EF" StrokeThickness="2" CornerRadius="35" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,0"/>
+                                <Ellipse Width="55" Height="70" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-10,0,0,2" RenderTransformOrigin="0.85,0.8" x:Name="PandaWavePaw">
+                                    <Ellipse.RenderTransform><RotateTransform Angle="18"/></Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse Width="55" Height="70" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-10,2"/>
+                                <Ellipse Width="80" Height="82" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                                <Ellipse Width="58" Height="62" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,14"/>
+                            </Grid>
+                        </Grid>
+
+                        <Border Background="#F6F8FB" CornerRadius="16" Padding="18,14" Margin="0,8,0,20">
+                            <StackPanel>
+                                <TextBlock Text="Eine Nachricht vom Creator" FontWeight="SemiBold" FontSize="14"/>
+                                <TextBlock Text="Orvian 2.0 ist kein kleines Update. Der Browser wurde neu gedacht – mit einem klaren Browsergefühl, einem eigenen Charakter und viel Liebe für Details. Der Panda ist dabei mehr als ein Logo: Er ist unser kleiner Begleiter." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="13" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="Orvian starten  →" Click="CloseWelcome_Click" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Die Begrüßung erscheint nur beim ersten Start von Orvian 2.0." HorizontalAlignment="Center" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,12,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
     </Grid>
 </Window>
