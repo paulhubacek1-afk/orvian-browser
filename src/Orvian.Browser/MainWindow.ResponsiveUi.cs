@@ -6,14 +6,18 @@ namespace Orvian.Browser;
 
 public partial class MainWindow
 {
+    private static readonly object _responsiveUiBootstrap = RegisterResponsiveUi();
     private Border? _updateCard;
     private StackPanel? _updateActions;
     private Viewbox? _pandaViewbox;
 
-    private void InitializeResponsiveUiHooks()
+    private static object RegisterResponsiveUi()
     {
-        Loaded += ResponsiveUi_Loaded;
-        SizeChanged += MainWindow_SizeChanged;
+        EventManager.RegisterClassHandler(typeof(MainWindow), FrameworkElement.LoadedEvent, new RoutedEventHandler(static (sender, _) =>
+        {
+            if (sender is MainWindow window) window.ResponsiveUi_Loaded(window, new RoutedEventArgs(FrameworkElement.LoadedEvent));
+        }));
+        return new object();
     }
 
     private void ResponsiveUi_Loaded(object? sender, RoutedEventArgs e)
@@ -71,11 +75,7 @@ public partial class MainWindow
 
             if (card.Child is StackPanel stack)
             {
-                foreach (var child in stack.Children)
-                {
-                    if (child is TextBlock text && text.Name == "UpdateText")
-                        text.MaxWidth = Math.Max(230, card.MaxWidth - card.Padding.Left - card.Padding.Right);
-                }
+                UpdateText.MaxWidth = Math.Max(230, card.MaxWidth - card.Padding.Left - card.Padding.Right);
 
                 var actions = stack.Children.OfType<StackPanel>().LastOrDefault();
                 if (actions != null)
