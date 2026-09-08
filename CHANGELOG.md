@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.1.0] - Extensions & Chromium-feel
+
+### Extensions
+- Added a Chrome-style Extensions button to the browser toolbar.
+- Added an Orvian Extensions store window with install, enable/disable and remove controls.
+- Added native WebView2 browser-extension support through the extensions-enabled environment.
+- Extensions are persisted in the WebView2 profile and can run in all Orvian tabs sharing that profile.
+
+### Spotify
+- Added the official Orvian catalog entry named `Spotify` as an installable unpacked Manifest V3 extension.
+- Added Spotify Web Player detection for the current track and artist.
+- Added play/pause, previous and next controls.
+- Added a floating Orvian Spotify mini-player that appears automatically while `open.spotify.com` is active and the extension is installed.
+- Added a local personal queue to the Spotify extension popup and the Orvian mini-player.
+- Added direct Spotify search opening from queued tracks.
+- Added a clear notice that the Orvian Spotify extension is independent and unofficial.
+
+### Platform
+- Upgraded Microsoft WebView2 from `1.0.3537.50` to `1.0.4129.50`.
+- Extension assets are copied into portable and published builds so installed extensions remain available after installation.
+- Added `Ctrl+Shift+E` for the extension store.
+
 ## [1.0.1] - Big bugfix
 
 ### Stability
