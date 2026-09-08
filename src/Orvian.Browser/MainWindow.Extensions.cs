@@ -10,17 +10,20 @@ namespace Orvian.Browser;
 
 public partial class MainWindow
 {
+    private static readonly object _extensionBootstrap = RegisterExtensionBootstrap();
     private readonly ExtensionManager _extensionManager = new();
     private SpotifyMiniPlayer? _spotifyMiniPlayer;
     private DispatcherTimer? _spotifyTimer;
     private Button? _extensionsButton;
     private bool _extensionsUiReady;
 
-    private void InitializeExtensionUiHooks()
+    private static object RegisterExtensionBootstrap()
     {
-        Loaded += ExtensionUi_Loaded;
-        Closed += ExtensionUi_Closed;
-        PreviewKeyDown += ExtensionUi_KeyDown;
+        EventManager.RegisterClassHandler(typeof(MainWindow), FrameworkElement.LoadedEvent, new RoutedEventHandler(static (sender, _) =>
+        {
+            if (sender is MainWindow window) window.ExtensionUi_Loaded(window, new RoutedEventArgs(FrameworkElement.LoadedEvent));
+        }));
+        return new object();
     }
 
     private void ExtensionUi_Loaded(object? sender, RoutedEventArgs e)
