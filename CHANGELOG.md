@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.0] - 2026-09-08
+
+### Der große Umbau
+- Kompletter Neustart der Orvian-Browseroberfläche mit modernem Chromium-/WebView2-Stil.
+- Neue Tab-Leiste, Omnibox sowie klare Zurück-, Vorwärts- und Neu-laden-Steuerung.
+- Neue Tab-Seite mit Suche und Schnellzugriffen.
+- Panda-Maskottchen mit animierter Begrüßung, Schweben, Winken und Blinzeln.
+- Persönliche Creator-Meldung als Teil der Orvian-Identität.
+- Downloads, Verlauf und Browserdaten-Löschung integriert.
+- Sichere WebView2-Standards ohne absichtliche Deaktivierung von Schutzfunktionen.
+- Grundlage für den weiteren Ausbau zu einem schnellen, sicheren und modernen Orvian Browser.
+
 ## [1.1.0] - Extensions & Chromium-feel
 
 ### Extensions
