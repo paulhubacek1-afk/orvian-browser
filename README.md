@@ -1,11 +1,10 @@
 # Orvian Browser
 
 A privacy-first, customizable Chromium-based desktop browser for Windows with no account required.
-
-## 1.0.0 stable
-
-Orvian 1.0.0 uses Microsoft Edge WebView2 as its Chromium-based web platform and provides a custom browser shell written in WPF. Normal HTTPS/HTTP websites, local `file://` pages, `data:` documents and ordinary HTML files (`.html` / `.htm`) are supported.
-
+Wichtige info:
+## Orvian Browser Team!
+Nach reichlicher überlegung setze ich den Browser neu auf Mehr im Chromium Style das update kann zwischen 1 und 3 Wochen dauern! Bis dort hin könnt ihr Orvian nicht Downloaden! Tut uns leid!
+Solltest du es besser hinbekommen überzeuge uns und Programmiere mit dem Original Source code deine eigenen Extensions oder den Browser komplett neu!
 ## Included
 
 - Chromium-based browsing through Microsoft Edge WebView2
