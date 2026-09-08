@@ -46,14 +46,14 @@ public partial class MainWindow
             foreach (var host in NavigationSafeHosts)
                 window._blocker.AllowSite(host);
 
-            // Keep the creator link in the new canonical form supplied for Noctra11.
+            // Canonical Noctra11 YouTube channel URL.
             foreach (var button in FindVisualChildren<Button>(window))
             {
                 if (button.Tag is string tag &&
                     (tag.Equals("https://www.youtube.com/@Noctra11", StringComparison.OrdinalIgnoreCase) ||
                      tag.Equals("https://www.youtube.com/@Noctra11_Yt", StringComparison.OrdinalIgnoreCase)))
                 {
-                    button.Tag = Noctra11YouTubeUrl;
+                    button.Tag = "https://www.youtube.com/@Noctra11_Yt";
                 }
             }
         }));
