@@ -10,19 +10,17 @@ namespace Orvian.Browser;
 
 public partial class MainWindow
 {
-    private readonly object _extensionBootstrap = RegisterExtensionBootstrap();
     private readonly ExtensionManager _extensionManager = new();
     private SpotifyMiniPlayer? _spotifyMiniPlayer;
     private DispatcherTimer? _spotifyTimer;
     private Button? _extensionsButton;
     private bool _extensionsUiReady;
 
-    private object RegisterExtensionBootstrap()
+    private void InitializeExtensionUiHooks()
     {
         Loaded += ExtensionUi_Loaded;
         Closed += ExtensionUi_Closed;
         PreviewKeyDown += ExtensionUi_KeyDown;
-        return new object();
     }
 
     private void ExtensionUi_Loaded(object? sender, RoutedEventArgs e)
@@ -74,8 +72,7 @@ public partial class MainWindow
         }
         catch
         {
-            // MainWindow's normal initializer remains the fallback if the
-            // extensions-enabled environment cannot be created.
+            // MainWindow's normal initializer remains the fallback if the extensions-enabled environment cannot be created.
         }
     }
 
