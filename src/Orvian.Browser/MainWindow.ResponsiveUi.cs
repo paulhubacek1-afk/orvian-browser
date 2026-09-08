@@ -6,9 +6,22 @@ namespace Orvian.Browser;
 
 public partial class MainWindow
 {
+    private readonly object _responsiveUiBootstrap = RegisterResponsiveUi();
     private Border? _updateCard;
     private StackPanel? _updateActions;
     private Viewbox? _pandaViewbox;
+
+    private object RegisterResponsiveUi()
+    {
+        Loaded += ResponsiveUi_Loaded;
+        SizeChanged += MainWindow_SizeChanged;
+        return new object();
+    }
+
+    private void ResponsiveUi_Loaded(object? sender, RoutedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(new Action(ApplyResponsiveUi), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
 
     private void ApplyResponsiveUi()
     {
@@ -18,7 +31,6 @@ public partial class MainWindow
         {
             var index = PandaLayer.Children.IndexOf(_panda);
             PandaLayer.Children.Remove(_panda);
-
             _pandaViewbox = new Viewbox
             {
                 Child = _panda,
@@ -29,7 +41,6 @@ public partial class MainWindow
                 Margin = new Thickness(0, 0, 16, 14),
                 IsHitTestVisible = false
             };
-            Grid.SetColumn(_pandaViewbox, 0);
             PandaLayer.Children.Insert(Math.Max(0, index), _pandaViewbox);
         }
 
@@ -39,7 +50,11 @@ public partial class MainWindow
             var tiny = ActualWidth < 900 || ActualHeight < 650;
             _pandaViewbox.Width = tiny ? 76 : compact ? 96 : 126;
             _pandaViewbox.Height = _pandaViewbox.Width;
-            _pandaViewbox.Margin = tiny ? new Thickness(0, 0, 8, 8) : compact ? new Thickness(0, 0, 12, 10) : new Thickness(0, 0, 16, 14);
+            _pandaViewbox.Margin = tiny
+                ? new Thickness(0, 0, 8, 8)
+                : compact
+                    ? new Thickness(0, 0, 12, 10)
+                    : new Thickness(0, 0, 16, 14);
         }
 
         if (UpdateOverlay?.Child is Border card)
@@ -47,10 +62,11 @@ public partial class MainWindow
             _updateCard = card;
             var compact = ActualWidth < 850;
             var tiny = ActualWidth < 620;
+            var available = Math.Max(280, ActualWidth - (tiny ? 24 : 56));
 
             card.Width = double.NaN;
             card.MinWidth = 0;
-            card.MaxWidth = Math.Max(280, Math.Min(660, ActualWidth - (tiny ? 24 : 56)));
+            card.MaxWidth = Math.Min(660, available);
             card.Margin = new Thickness(tiny ? 12 : compact ? 20 : 28);
             card.Padding = new Thickness(tiny ? 20 : compact ? 24 : 34);
             card.CornerRadius = new CornerRadius(tiny ? 20 : 27);
@@ -72,15 +88,13 @@ public partial class MainWindow
 
                     foreach (var child in actions.Children.OfType<Button>())
                     {
-                        child.Width = tiny ? double.NaN : child.Width;
+                        child.Width = tiny ? double.NaN : double.NaN;
                         child.HorizontalAlignment = tiny ? HorizontalAlignment.Stretch : HorizontalAlignment.Right;
-                        child.Margin = tiny ? new Thickness(0, 5, 0, 0) : child.Margin;
+                        child.Margin = tiny ? new Thickness(0, 5, 0, 0) : new Thickness(0, 0, 8, 0);
                         child.MinHeight = 44;
                     }
                 }
             }
-
-            if (card.Content is Grid) { }
         }
     }
 
