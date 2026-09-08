@@ -79,20 +79,18 @@
             </Border>
         </Grid>
 
-        <!-- Orvian 2.0 first-run experience: animated mascot + creator message -->
+        <!-- Animated first-run experience -->
         <Grid x:Name="WelcomeOverlay" Grid.RowSpan="3" Visibility="Collapsed" Background="#660B1020" Panel.ZIndex="500">
             <Grid>
                 <Border Width="610" Padding="44,38,44,34" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="28" Background="White" Effect="{StaticResource CardShadow}">
                     <StackPanel>
-                        <TextBlock Text="ORVIAN 2.0" Foreground="{StaticResource Accent}" FontWeight="Bold" FontSize="13" LetterSpacing="2" HorizontalAlignment="Center"/>
+                        <TextBlock Text="ORVIAN 2.0" Foreground="{StaticResource Accent}" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center"/>
                         <TextBlock Text="Der große Umbau ist da." FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,7,0,4"/>
                         <TextBlock Text="Schneller. Ruhiger. Moderner. Mit einem Panda, der dich durch Orvian begleitet." TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="15" MaxWidth="500" HorizontalAlignment="Center"/>
 
                         <Grid Height="190" Margin="0,24,0,8" HorizontalAlignment="Center">
                             <Grid RenderTransformOrigin="0.5,0.5" x:Name="PandaFloat">
-                                <Grid.RenderTransform>
-                                    <TranslateTransform Y="0"/>
-                                </Grid.RenderTransform>
+                                <Grid.RenderTransform><TranslateTransform Y="0"/></Grid.RenderTransform>
                                 <Ellipse Width="62" Height="62" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="14,12,0,0"/>
                                 <Ellipse Width="62" Height="62" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,14,0"/>
                                 <Ellipse Width="178" Height="148" Fill="#F8FAFC" Stroke="#E3E8EF" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,18,0,0"/>
@@ -107,8 +105,7 @@
                                 <Ellipse Width="13" Height="10" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Center" Margin="0,102,0,0"/>
                                 <Ellipse Width="6" Height="4" Fill="White" HorizontalAlignment="Center" Margin="0,105,0,0"/>
                                 <Border Width="72" Height="22" Background="#F4E9E4" CornerRadius="11" HorizontalAlignment="Center" Margin="0,118,0,0"/>
-
-                                <Border Width="70" Height="112" Background="#F8FAFC" Stroke="#E3E8EF" StrokeThickness="2" CornerRadius="35" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,0"/>
+                                <Border Width="70" Height="112" Background="#F8FAFC" Stroke="#E3E8EF" StrokeThickness="2" CornerRadius="35" HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
                                 <Ellipse Width="55" Height="70" Fill="{StaticResource PandaBlack}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-10,0,0,2" RenderTransformOrigin="0.85,0.8" x:Name="PandaWavePaw">
                                     <Ellipse.RenderTransform><RotateTransform Angle="18"/></Ellipse.RenderTransform>
                                 </Ellipse>
@@ -130,6 +127,25 @@
                     </StackPanel>
                 </Border>
             </Grid>
+        </Grid>
+
+        <!-- Creator message, reachable from the main menu -->
+        <Grid x:Name="CreatorOverlay" Grid.RowSpan="3" Visibility="Collapsed" Background="#660B1020" Panel.ZIndex="600">
+            <Border Width="560" HorizontalAlignment="Center" VerticalAlignment="Center" Background="White" CornerRadius="26" Padding="34" Effect="{StaticResource CardShadow}">
+                <StackPanel>
+                    <TextBlock Text="CREATOR-MELDUNG" Foreground="{StaticResource Accent}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Willkommen bei Orvian." FontSize="30" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,8,0,4"/>
+                    <TextBlock Text="Orvian 2.0 wurde als großer Neustart gedacht: eine ruhige Oberfläche, ein echter Browserkern und ein Panda mit eigenem Charakter." TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="15" Margin="0,0,0,22"/>
+                    <Border Background="#F6F8FB" CornerRadius="16" Padding="18" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="Die Idee dahinter" FontWeight="SemiBold" FontSize="14"/>
+                            <TextBlock Text="Der Browser soll sich vertraut anfühlen, aber nicht langweilig. Deshalb bleiben die wichtigen Browserkonzepte klar und direkt, während Orvian seinen eigenen Stil, seine eigenen Details und sein Maskottchen bekommt." TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="13" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="Danke, dass du Orvian ausprobierst. 🐼" HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                    <Button Content="Zurück zum Browser" Click="CloseCreator_Click" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>
