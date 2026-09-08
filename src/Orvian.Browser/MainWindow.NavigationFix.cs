@@ -2,6 +2,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace Orvian.Browser;
@@ -10,7 +11,6 @@ public partial class MainWindow
 {
     private static readonly HashSet<WebView2> NavigationBridgeViews = new();
     private static readonly HashSet<CoreWebView2> NavigationBridgeCores = new();
-
     private static readonly bool NavigationFixRegistered = RegisterNavigationFix();
 
     private static bool RegisterNavigationFix()
@@ -37,6 +37,8 @@ public partial class MainWindow
 
         window.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
         {
+            // Keep the major first-party sites usable even if an EasyList rule
+            // accidentally matches one of their subresources.
             window._blocker.AllowSite("google.com");
             window._blocker.AllowSite("google.de");
             window._blocker.AllowSite("gstatic.com");
@@ -101,8 +103,7 @@ public partial class MainWindow
         try
         {
             var source = core.Source ?? string.Empty;
-            if (!source.StartsWith("data:text/html", StringComparison.OrdinalIgnoreCase) &&
-                !source.StartsWith("about:blank", StringComparison.OrdinalIgnoreCase))
+            if (!source.StartsWith("data:text/html", StringComparison.OrdinalIgnoreCase))
                 return;
 
             await core.ExecuteScriptAsync(@"
@@ -111,7 +112,7 @@ public partial class MainWindow
         if (button.dataset.orvianNavigationBridge === '1') return;
 
         const onclick = button.getAttribute('onclick') || '';
-        const match = onclick.match(/go\\(['\"']([^'\"']+)['\"']\\)/);
+        const match = onclick.match(/go\(['\"]([^'\"]+)['\"]\)/);
         if (!match) return;
 
         const url = match[1];
@@ -127,6 +128,7 @@ public partial class MainWindow
         }
         catch
         {
+            // A failed bridge injection must never break normal browser navigation.
         }
     }
 
@@ -171,19 +173,6 @@ public partial class MainWindow
                 window.NavigateExternal(tab, uri.AbsoluteUri);
             }), DispatcherPriority.Input);
             return;
-        }
-    }
-
-    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject root) where T : DependencyObject
-    {
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-        {
-            var child = VisualTreeHelper.GetChild(root, i);
-            if (child is T match)
-                yield return match;
-
-            foreach (var descendant in FindVisualChildren<T>(child))
-                yield return descendant;
         }
     }
 }
