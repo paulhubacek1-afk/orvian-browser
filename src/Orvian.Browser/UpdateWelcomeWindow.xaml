@@ -1,90 +1,178 @@
 <Window x:Class="Orvian.Browser.UpdateWelcomeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Orvian.Browser"
         Title="Orvian – Update"
-        Width="900" Height="620" MinWidth="760" MinHeight="520"
+        Width="900" Height="680" MinWidth="560" MinHeight="460"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="#F5F9FD"
-        ShowInTaskbar="False">
+        Background="#F3F6FA"
+        ShowInTaskbar="False"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
     <Window.Resources>
-        <Storyboard x:Key="Intro">
-            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleX" From="0.78" To="1" Duration="0:0:0.55">
-                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.18"/></DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="CardScale" Storyboard.TargetProperty="ScaleY" From="0.78" To="1" Duration="0:0:0.55">
-                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.18"/></DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="Card" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.30"/>
-            <DoubleAnimation Storyboard.TargetName="PandaScale" Storyboard.TargetProperty="ScaleX" From="0.5" To="1" Duration="0:0:0.5" BeginTime="0:0:0.12">
-                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.3"/></DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="PandaScale" Storyboard.TargetProperty="ScaleY" From="0.5" To="1" Duration="0:0:0.5" BeginTime="0:0:0.12">
-                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.3"/></DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="PandaRotate" Storyboard.TargetProperty="Angle" From="-5" To="5" Duration="0:0:0.25" AutoReverse="True" RepeatBehavior="2x" BeginTime="0:0:0.62"/>
-        </Storyboard>
+        <DropShadowEffect x:Key="DialogShadow" BlurRadius="30" ShadowDepth="8" Direction="270" Opacity="0.16"/>
+
+        <Style x:Key="PrimaryAction" TargetType="Button">
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Background" Value="#1A73E8"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="12" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Root" Property="Background" Value="#1769D1"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Root" Property="Opacity" Value="0.84"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryAction" TargetType="Button">
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Background" Value="#F2F6FB"/>
+            <Setter Property="Foreground" Value="#1A73E8"/>
+            <Setter Property="BorderBrush" Value="#D7E2EE"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Root" Property="Background" Value="#E8F0FA"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Root" Property="Opacity" Value="0.84"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
-        <Border x:Name="Card" Margin="32" CornerRadius="28" Background="White" BorderBrush="#D9E6F2" BorderThickness="1" Opacity="0" Padding="34">
-            <Border.RenderTransform>
-                <ScaleTransform x:Name="CardScale" CenterX="450" CenterY="278"/>
-            </Border.RenderTransform>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="250"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+        <ScrollViewer Margin="16"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="True">
+            <Border x:Name="Card"
+                    MaxWidth="860"
+                    HorizontalAlignment="Center"
+                    Background="White"
+                    BorderBrush="#D8E2ED"
+                    BorderThickness="1"
+                    CornerRadius="24"
+                    Effect="{StaticResource DialogShadow}"
+                    Opacity="0"
+                    RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="CardScale" ScaleX="0.97" ScaleY="0.97"/>
+                </Border.RenderTransform>
 
-                <Grid Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Grid.RenderTransform>
-                        <TransformGroup>
-                            <ScaleTransform x:Name="PandaScale" ScaleX="0.5" ScaleY="0.5" CenterX="110" CenterY="110"/>
-                            <RotateTransform x:Name="PandaRotate" Angle="0" CenterX="110" CenterY="110"/>
-                        </TransformGroup>
-                    </Grid.RenderTransform>
-                    <Canvas Width="220" Height="220">
-                        <Ellipse Width="76" Height="76" Fill="#20242B" Canvas.Left="12" Canvas.Top="8"/>
-                        <Ellipse Width="76" Height="76" Fill="#20242B" Canvas.Left="132" Canvas.Top="8"/>
-                        <Ellipse Width="178" Height="158" Fill="#20242B" Canvas.Left="21" Canvas.Top="38"/>
-                        <Ellipse Width="158" Height="136" Fill="White" Canvas.Left="31" Canvas.Top="50"/>
-                        <Ellipse Width="55" Height="70" Fill="#20242B" Canvas.Left="42" Canvas.Top="66" RenderTransformOrigin="0.5,0.5"><Ellipse.RenderTransform><RotateTransform Angle="-23"/></Ellipse.RenderTransform></Ellipse>
-                        <Ellipse Width="55" Height="70" Fill="#20242B" Canvas.Left="123" Canvas.Top="66" RenderTransformOrigin="0.5,0.5"><Ellipse.RenderTransform><RotateTransform Angle="23"/></Ellipse.RenderTransform></Ellipse>
-                        <Ellipse Width="16" Height="22" Fill="White" Canvas.Left="59" Canvas.Top="89"/>
-                        <Ellipse Width="16" Height="22" Fill="White" Canvas.Left="145" Canvas.Top="89"/>
-                        <Ellipse Width="8" Height="12" Fill="#20242B" Canvas.Left="63" Canvas.Top="95"/>
-                        <Ellipse Width="8" Height="12" Fill="#20242B" Canvas.Left="149" Canvas.Top="95"/>
-                        <Ellipse Width="22" Height="16" Fill="#20242B" Canvas.Left="98" Canvas.Top="116"/>
-                        <Ellipse Width="15" Height="8" Fill="#FFB0B8" Canvas.Left="45" Canvas.Top="135" Opacity="0.72"/>
-                        <Ellipse Width="15" Height="8" Fill="#FFB0B8" Canvas.Left="160" Canvas.Top="135" Opacity="0.72"/>
-                    </Canvas>
-                </Grid>
+                <StackPanel>
+                    <Border Height="5" CornerRadius="24,24,0,0" Background="#1A73E8"/>
 
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="28,0,8,0">
-                    <TextBlock Text="Willkommen beim neuen Update!" FontSize="34" FontWeight="Bold" Foreground="#182332" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="VersionText" Text="Orvian 1.0.0 ist bereit." FontSize="18" Foreground="#1A73E8" FontWeight="SemiBold" Margin="0,8,0,16"/>
-                    <TextBlock Text="Eine stabile Orvian-Version mit sauberer Web-Navigation und den wichtigsten Browser-Grundfunktionen." FontSize="14" Foreground="#687587" Margin="0,0,0,20" TextWrapping="Wrap"/>
+                    <StackPanel Margin="28,22,28,26">
+                        <Grid Margin="0,0,0,22">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                    <Border Background="#F3F8FD" CornerRadius="16" Padding="16" Margin="0,0,0,22">
-                        <StackPanel>
-                            <TextBlock Text="Enthalten" FontSize="15" FontWeight="Bold" Foreground="#233043" Margin="0,0,0,10"/>
-                            <TextBlock Text="🐼 Animiertes Panda-Maskottchen" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="⌕ Command Palette &amp; interne Orvian-Seiten" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="📚 Verlauf &amp; Lesezeichen" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="📥 Download-Übersicht" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="🛡 Datenschutz &amp; Berechtigungen" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="🌐 HTML-Dateien, data: und normale Websites" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                            <TextBlock Text="↗ Echte neue Tabs für neue Fenster/Links" FontSize="13.5" Foreground="#334155" Margin="0,3"/>
-                        </StackPanel>
-                    </Border>
+                            <Border Width="38" Height="38" CornerRadius="12" Background="#1A73E8">
+                                <TextBlock Text="O" Foreground="White" FontSize="21" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="ORVIAN" FontSize="13" FontWeight="Bold" Foreground="#1F2937"/>
+                                <TextBlock Text="Browser Update" FontSize="11" Foreground="#7B8797" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Border Grid.Column="2" Background="#EEF5FF" BorderBrush="#D8E8FF" BorderThickness="1" CornerRadius="10" Padding="10,6" VerticalAlignment="Center">
+                                <TextBlock Text="NEUE VERSION" FontSize="10" FontWeight="Bold" Foreground="#1A73E8"/>
+                            </Border>
+                        </Grid>
 
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="Los geht's 🚀" Width="150" Height="45" Background="#1A73E8" Foreground="White" BorderThickness="0" FontWeight="SemiBold" Click="Continue_Click"/>
-                        <Button Content="Update-Details" Width="125" Height="45" Margin="10,0,0,0" Background="#EEF5FF" Foreground="#1A73E8" BorderThickness="0" Click="Details_Click"/>
+                        <WrapPanel HorizontalAlignment="Center" ItemWidth="Auto" Margin="0,0,0,24">
+                            <Border Width="196" Height="196" CornerRadius="98" Background="#F1F5FA" BorderBrush="#E0E7EF" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Viewbox Stretch="Uniform" Margin="18">
+                                    <local:PandaControl x:Name="PandaMascot" Width="132" Height="132"/>
+                                </Viewbox>
+                            </Border>
+
+                            <StackPanel Width="500" MinWidth="250" Margin="28,8,0,0" VerticalAlignment="Center">
+                                <Border Background="#EAF3FF" CornerRadius="10" Padding="10,6" HorizontalAlignment="Left">
+                                    <TextBlock Text="UPDATE ERFOLGREICH INSTALLIERT" FontSize="10" FontWeight="Bold" Foreground="#1A73E8"/>
+                                </Border>
+                                <TextBlock Text="Willkommen bei deinem neuen Orvian" FontSize="30" FontWeight="Bold" Foreground="#172033" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                                <TextBlock x:Name="VersionText" Text="Orvian ist bereit." FontSize="18" Foreground="#1A73E8" FontWeight="SemiBold" Margin="0,7,0,0"/>
+                                <TextBlock Text="Schneller, moderner und mit neuen Browser-Funktionen – alles ist bereit für deine nächste Session." FontSize="14" Foreground="#66758A" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <TextBlock Text="Neu in dieser Version" FontSize="19" FontWeight="Bold" Foreground="#172033" Margin="0,0,0,12"/>
+                        <WrapPanel>
+                            <Border Width="250" Height="82" Background="#F7F9FC" BorderBrush="#E1E7EF" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,10,10">
+                                <StackPanel>
+                                    <TextBlock Text="🧩  Erweiterungen" FontSize="13.5" FontWeight="SemiBold" Foreground="#243247"/>
+                                    <TextBlock Text="Chrome-artige Extensions direkt in Orvian." FontSize="12" Foreground="#718096" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Width="250" Height="82" Background="#F7F9FC" BorderBrush="#E1E7EF" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,10,10">
+                                <StackPanel>
+                                    <TextBlock Text="🎵  Spotify Mini-Player" FontSize="13.5" FontWeight="SemiBold" Foreground="#243247"/>
+                                    <TextBlock Text="Wiedergabe, Titelsteuerung und Queue." FontSize="12" Foreground="#718096" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Width="250" Height="82" Background="#F7F9FC" BorderBrush="#E1E7EF" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,10,10">
+                                <StackPanel>
+                                    <TextBlock Text="🌐  Chromium/WebView2" FontSize="13.5" FontWeight="SemiBold" Foreground="#243247"/>
+                                    <TextBlock Text="Moderne Web-Kompatibilität und echte Tabs." FontSize="12" Foreground="#718096" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Width="250" Height="82" Background="#F7F9FC" BorderBrush="#E1E7EF" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,10,10">
+                                <StackPanel>
+                                    <TextBlock Text="✨  Moderne Oberfläche" FontSize="13.5" FontWeight="SemiBold" Foreground="#243247"/>
+                                    <TextBlock Text="Sauberer, kompakter und responsive." FontSize="12" Foreground="#718096" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </WrapPanel>
+
+                        <Border Background="#F8FAFD" BorderBrush="#E1E7EF" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,6,0,20">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="28" Height="28" CornerRadius="14" Background="#EAF3FF">
+                                    <TextBlock Text="✓" Foreground="#1A73E8" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Alles bereit" FontSize="13" FontWeight="SemiBold" Foreground="#27364B"/>
+                                    <TextBlock Text="Du kannst Orvian jetzt direkt weiterverwenden." FontSize="12" Foreground="#718096" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <WrapPanel HorizontalAlignment="Right">
+                            <Button Content="Release ansehen" MinWidth="132" Style="{StaticResource SecondaryAction}" Click="Details_Click" Margin="0,0,8,0"/>
+                            <Button Content="Los geht’s" MinWidth="118" Style="{StaticResource PrimaryAction}" Click="Continue_Click"/>
+                        </WrapPanel>
                     </StackPanel>
                 </StackPanel>
-            </Grid>
-        </Border>
+            </Border>
+        </ScrollViewer>
     </Grid>
 </Window>
