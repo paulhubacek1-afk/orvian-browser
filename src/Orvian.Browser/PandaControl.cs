@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -5,269 +6,352 @@ using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
-namespace Orvian.Browser;
-
-public enum PandaMood
+namespace Orvian.Browser
 {
-    Idle, Happy, Thinking, Loading, Error, Success, Privacy, Sleep, Update, Curious, Excited
-}
-
-public sealed class PandaControl : Grid
-{
-    private readonly Ellipse _leftEye;
-    private readonly Ellipse _rightEye;
-    private readonly Ellipse _leftPupil;
-    private readonly Ellipse _rightPupil;
-    private readonly DispatcherTimer _blinkTimer;
-    private readonly DispatcherTimer _activityTimer;
-    private Storyboard? _active;
-    private readonly Random _random = new();
-
-    private static readonly Brush Black = new SolidColorBrush(Color.FromRgb(30, 34, 42));
-    private static readonly Brush BlackSoft = new SolidColorBrush(Color.FromRgb(54, 59, 69));
-    private static readonly Brush White = Brushes.White;
-    private static readonly Brush Belly = new SolidColorBrush(Color.FromRgb(249, 251, 254));
-    private static readonly Brush Soft = new SolidColorBrush(Color.FromRgb(236, 242, 249));
-    private static readonly Brush Accent = new SolidColorBrush(Color.FromRgb(47, 107, 255));
-    private static readonly Brush Pink = new SolidColorBrush(Color.FromRgb(255, 145, 175));
-
-    public PandaControl()
+    /// <summary>
+    /// Animated vector-panda mascot drawn entirely with WPF shapes.
+    /// Add it to a Panel and call Show() / Hide() / PlayHappy() etc.
+    /// </summary>
+    public class PandaControl
     {
-        Width = 132;
-        Height = 132;
-        MinWidth = 72;
-        MinHeight = 72;
-        IsHitTestVisible = false;
-        RenderTransformOrigin = new Point(.5, .76);
+        // ── Canvas & root ──────────────────────────────────────────
+        private readonly Canvas   _root;
+        private readonly Panel    _host;
 
-        var transforms = new TransformGroup();
-        transforms.Children.Add(new ScaleTransform(1, 1));
-        transforms.Children.Add(new RotateTransform(0));
-        transforms.Children.Add(new TranslateTransform(0, 0));
-        RenderTransform = transforms;
+        // ── Shape references for animation ─────────────────────────
+        private readonly Ellipse  _leftPupil;
+        private readonly Ellipse  _rightPupil;
+        private readonly Ellipse  _leftEyeWhite;
+        private readonly Ellipse  _rightEyeWhite;
+        private readonly Ellipse  _leftBlink;
+        private readonly Ellipse  _rightBlink;
+        private readonly Path     _mouth;
+        private readonly Ellipse  _blushL;
+        private readonly Ellipse  _blushR;
 
-        var canvas = new Canvas { Width = 132, Height = 132 };
-        Children.Add(canvas);
+        // ── Speech bubble ──────────────────────────────────────────
+        private readonly Border        _bubble;
+        private readonly TextBlock     _bubbleText;
 
-        // Friendly panda silhouette: round ears, white muzzle, eye patches, belly, paws.
-        AddEllipse(canvas, 17, 116, 98, 10, new SolidColorBrush(Color.FromArgb(28, 25, 35, 50)));
-        AddEllipse(canvas, 34, 68, 64, 56, Black);
-        AddEllipse(canvas, 45, 78, 42, 34, Belly);
-        AddEllipse(canvas, 35, 99, 27, 20, Black);
-        AddEllipse(canvas, 70, 99, 27, 20, Black);
-        AddEllipse(canvas, 39, 106, 16, 8, White, opacity: .92);
-        AddEllipse(canvas, 77, 106, 16, 8, White, opacity: .92);
-        AddEllipse(canvas, 24, 71, 25, 47, Black, -18);
-        AddEllipse(canvas, 83, 71, 25, 47, Black, 18);
-        AddEllipse(canvas, 25, 103, 17, 15, White, opacity: .94);
-        AddEllipse(canvas, 90, 103, 17, 15, White, opacity: .94);
+        // ── Timers ─────────────────────────────────────────────────
+        private readonly DispatcherTimer _blinkTimer;
+        private readonly DispatcherTimer _bounceTimer;
+        private          bool            _blinking;
 
-        AddEllipse(canvas, 17, 11, 39, 39, Black);
-        AddEllipse(canvas, 76, 11, 39, 39, Black);
-        AddEllipse(canvas, 26, 20, 21, 21, BlackSoft, opacity: .95);
-        AddEllipse(canvas, 85, 20, 21, 21, BlackSoft, opacity: .95);
-        AddEllipse(canvas, 13, 26, 106, 84, Black);
-        AddEllipse(canvas, 23, 37, 86, 70, White);
-        AddEllipse(canvas, 28, 45, 76, 61, Soft, opacity: .42);
+        // ── Transform ──────────────────────────────────────────────
+        private readonly TranslateTransform _bounce = new();
+        private          double             _bounceDir = 1;
 
-        // Classic panda eye patches.
-        AddEllipse(canvas, 28, 53, 33, 42, BlackSoft, -18);
-        AddEllipse(canvas, 71, 53, 33, 42, BlackSoft, 18);
-        _leftEye = AddEllipse(canvas, 38, 62, 16, 18, White);
-        _rightEye = AddEllipse(canvas, 75, 62, 16, 18, White);
-        _leftPupil = AddEllipse(canvas, 43, 66, 7, 10, Black);
-        _rightPupil = AddEllipse(canvas, 80, 66, 7, 10, Black);
-        AddEllipse(canvas, 45, 67, 2.8, 3.7, White);
-        AddEllipse(canvas, 82, 67, 2.8, 3.7, White);
+        // ── Config ─────────────────────────────────────────────────
+        private const double Scale   = 1.0;
+        private const double W       = 110 * Scale;   // canvas logical width
+        private const double H       = 120 * Scale;   // canvas logical height
+        private const double Margin  = 16;
 
-        AddRoundedBar(canvas, 39, 53, 13, 3, Black, -10);
-        AddRoundedBar(canvas, 80, 53, 13, 3, Black, 10);
-
-        // Small nose and smile instead of the previous hard-looking mouth.
-        AddEllipse(canvas, 57, 82, 18, 11, Black);
-        var mouth = new System.Windows.Shapes.Path
+        // ══════════════════════════════════════════════════════════
+        public PandaControl(Panel host)
         {
-            Stroke = Black,
-            StrokeThickness = 2.5,
-            Data = Geometry.Parse("M 55,92 Q 66,103 77,92"),
-            StrokeStartLineCap = PenLineCap.Round,
-            StrokeEndLineCap = PenLineCap.Round
-        };
-        canvas.Children.Add(mouth);
-        AddEllipse(canvas, 30, 86, 15, 8, Pink, opacity: .38);
-        AddEllipse(canvas, 87, 86, 15, 8, Pink, opacity: .38);
+            _host = host;
+            _root = new Canvas { Width = W, Height = H, IsHitTestVisible = false };
 
-        var badge = new Border
+            BuildPanda();
+
+            _bubble     = BuildBubble(out _bubbleText);
+            _bubble.Visibility = Visibility.Collapsed;
+            _host.Children.Add(_bubble);
+
+            _root.RenderTransform = _bounce;
+            _host.Children.Add(_root);
+
+            _root.SizeChanged += (_, __) => Reposition();
+            _host.SizeChanged += (_, __) => Reposition();
+
+            // Blink every 3–5 s
+            _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.6) };
+            _blinkTimer.Tick += OnBlinkTick;
+            _blinkTimer.Start();
+
+            // Soft idle bob
+            _bounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(25) };
+            _bounceTimer.Tick += OnBounceTick;
+            _bounceTimer.Start();
+
+            _root.Visibility = Visibility.Collapsed;
+        }
+
+        // ── Public API ────────────────────────────────────────────
+
+        public bool IsVisible => _root.Visibility == Visibility.Visible;
+
+        public void Show()
         {
-            Width = 24,
-            Height = 24,
-            CornerRadius = new CornerRadius(12),
-            Background = Accent,
-            BorderBrush = White,
-            BorderThickness = new Thickness(2),
-            Child = new TextBlock
+            _root.Visibility   = Visibility.Visible;
+            _bubble.Visibility = Visibility.Collapsed;
+            Reposition();
+            FadeIn(_root, 0.38);
+        }
+
+        public void Hide()
+        {
+            FadeOut(_root, 0.28, () =>
             {
-                Text = "O",
-                Foreground = White,
-                FontSize = 12,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
+                _root.Visibility   = Visibility.Collapsed;
+                _bubble.Visibility = Visibility.Collapsed;
+            });
+        }
+
+        /// <summary>Panda bounces happily and blushes.</summary>
+        public void PlayHappy()
+        {
+            SetBlush(true);
+            SetMouth("happy");
+            var sb = new Storyboard();
+            var anim = new DoubleAnimationUsingKeyFrames();
+            anim.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = TimeSpan.FromMilliseconds(0),   Value = 0 });
+            anim.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = TimeSpan.FromMilliseconds(140),  Value = -12, EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+            anim.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = TimeSpan.FromMilliseconds(300),  Value = 0,  EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn  } });
+            anim.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = TimeSpan.FromMilliseconds(440),  Value = -9, EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+            anim.KeyFrames.Add(new EasingDoubleKeyFrame { KeyTime = TimeSpan.FromMilliseconds(580),  Value = 0,  EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn  } });
+            Storyboard.SetTarget(anim, _bounce);
+            Storyboard.SetTargetProperty(anim, new PropertyPath(TranslateTransform.YProperty));
+            sb.Children.Add(anim);
+            sb.Completed += (_, __) => { SetBlush(false); SetMouth("normal"); };
+            sb.Begin();
+        }
+
+        /// <summary>Panda tilts and shows thinking dots.</summary>
+        public void PlayThinking()
+        {
+            SetMouth("think");
+            Say("…");
+        }
+
+        /// <summary>Back to calm idle stance.</summary>
+        public void PlayIdle()
+        {
+            SetMouth("normal");
+            SetBlush(false);
+            HideBubble();
+        }
+
+        public void StopAnimations()
+        {
+            _blinkTimer.Stop();
+            _bounceTimer.Stop();
+        }
+
+        /// <summary>Display a speech bubble with a short message.</summary>
+        public void Say(string text, double autoHideSeconds = 3.5)
+        {
+            _bubbleText.Text = text;
+            Reposition();
+            _bubble.Visibility = Visibility.Visible;
+            FadeIn(_bubble, 0.25);
+
+            if (autoHideSeconds > 0)
+            {
+                var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(autoHideSeconds) };
+                t.Tick += (_, __) => { HideBubble(); t.Stop(); };
+                t.Start();
             }
-        };
-        Canvas.SetLeft(badge, 54);
-        Canvas.SetTop(badge, 99);
-        canvas.Children.Add(badge);
+        }
 
-        _blinkTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.4) };
-        _blinkTimer.Tick += (_, _) => Blink();
-        _blinkTimer.Start();
+        public void HideBubble() =>
+            FadeOut(_bubble, 0.2, () => _bubble.Visibility = Visibility.Collapsed);
 
-        _activityTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8.5) };
-        _activityTimer.Tick += (_, _) => RandomMicroAction();
-        _activityTimer.Start();
+        // ── Drawing ───────────────────────────────────────────────
 
-        StartIdle();
-    }
-
-    private static Ellipse AddEllipse(Canvas canvas, double left, double top, double width, double height, Brush fill, double angle = 0, double opacity = 1)
-    {
-        var shape = new Ellipse
+        private void BuildPanda()
         {
-            Width = width,
-            Height = height,
-            Fill = fill,
-            Opacity = opacity,
-            RenderTransformOrigin = new Point(.5, .5)
-        };
-        if (Math.Abs(angle) > .01)
-            shape.RenderTransform = new RotateTransform(angle);
-        Canvas.SetLeft(shape, left);
-        Canvas.SetTop(shape, top);
-        canvas.Children.Add(shape);
-        return shape;
-    }
+            double s = Scale;
 
-    private static void AddRoundedBar(Canvas canvas, double left, double top, double width, double height, Brush fill, double angle)
-    {
-        var bar = new Border
+            // ── Ears ─────────────────────────────────────────────
+            AddEllipse(2*s,  0,    22*s, 22*s, "#E0E0E0");   // left ear outer
+            AddEllipse(86*s, 0,    22*s, 22*s, "#E0E0E0");   // right ear outer
+            AddEllipse(9*s,  6*s,  12*s, 12*s, "#C89090");   // left inner
+            AddEllipse(93*s, 6*s,  12*s, 12*s, "#C89090");   // right inner
+
+            // ── Face ─────────────────────────────────────────────
+            AddEllipse(7*s, 18*s, 96*s, 84*s, "#F4F4F4");   // big white face
+
+            // ── Eye patches ──────────────────────────────────────
+            AddEllipse(12*s, 32*s, 32*s, 26*s, "#1A1A1A");   // left patch
+            AddEllipse(66*s, 32*s, 32*s, 26*s, "#1A1A1A");   // right patch
+
+            // ── Eye whites ───────────────────────────────────────
+            _leftEyeWhite  = AddEllipse(19*s, 37*s, 15*s, 15*s, "#FFFFFF");
+            _rightEyeWhite = AddEllipse(76*s, 37*s, 15*s, 15*s, "#FFFFFF");
+
+            // ── Pupils ───────────────────────────────────────────
+            _leftPupil  = AddEllipse(22*s, 40*s,  9*s, 9*s, "#111111");
+            _rightPupil = AddEllipse(79*s, 40*s,  9*s, 9*s, "#111111");
+
+            // Glints
+            AddEllipse(24*s, 40.5*s, 3*s, 3*s, "#FFFFFF");
+            AddEllipse(81*s, 40.5*s, 3*s, 3*s, "#FFFFFF");
+
+            // ── Blink covers (hidden by default) ─────────────────
+            _leftBlink  = AddEllipse(12*s, 32*s, 32*s, 26*s, "#1A1A1A"); _leftBlink.Opacity  = 0;
+            _rightBlink = AddEllipse(66*s, 32*s, 32*s, 26*s, "#1A1A1A"); _rightBlink.Opacity = 0;
+
+            // ── Nose ─────────────────────────────────────────────
+            AddEllipse(46*s, 72*s, 18*s, 12*s, "#2E2E2E");
+
+            // ── Blush circles ────────────────────────────────────
+            _blushL = AddEllipse(8*s,  74*s, 22*s, 12*s, "#E89090"); _blushL.Opacity = 0;
+            _blushR = AddEllipse(80*s, 74*s, 22*s, 12*s, "#E89090"); _blushR.Opacity = 0;
+
+            // ── Mouth ─────────────────────────────────────────────
+            _mouth = new Path
+            {
+                Stroke          = new SolidColorBrush(Color.FromRgb(0x2E, 0x2E, 0x2E)),
+                StrokeThickness = 2.4 * s,
+                StrokeLineCap   = PenLineCap.Round,
+                Data            = ParseGeometry("M 44,88 Q 55,96 66,88"),   // normal smile
+            };
+            _root.Children.Add(_mouth);
+
+            // ── Bamboo stalk (decorative) ─────────────────────────
+            var bamboo = new Path
+            {
+                Stroke          = new SolidColorBrush(Color.FromArgb(0x55, 0x57, 0xC4, 0x7A)),
+                StrokeThickness = 5 * s,
+                StrokeLineCap   = PenLineCap.Round,
+                Data            = ParseGeometry("M 104,110 Q 108,85 100,60 Q 112,38 106,10"),
+            };
+            _root.Children.Insert(0, bamboo);   // behind everything
+        }
+
+        private Ellipse AddEllipse(double x, double y, double w, double h, string hex)
         {
-            Width = width,
-            Height = height,
-            Background = fill,
-            CornerRadius = new CornerRadius(2),
-            RenderTransformOrigin = new Point(.5, .5),
-            RenderTransform = new RotateTransform(angle)
-        };
-        Canvas.SetLeft(bar, left);
-        Canvas.SetTop(bar, top);
-        canvas.Children.Add(bar);
-    }
+            var el = new Ellipse
+            {
+                Width  = w,
+                Height = h,
+                Fill   = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)),
+            };
+            Canvas.SetLeft(el, x);
+            Canvas.SetTop(el, y);
+            _root.Children.Add(el);
+            return el;
+        }
 
-    private void Blink()
-    {
-        var animation = new DoubleAnimation(1, .04, TimeSpan.FromMilliseconds(105))
+        private Border BuildBubble(out TextBlock tb)
         {
-            AutoReverse = true,
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
-        };
-        _leftEye.BeginAnimation(OpacityProperty, animation);
-        _rightEye.BeginAnimation(OpacityProperty, animation.Clone());
-        _leftPupil.BeginAnimation(OpacityProperty, animation.Clone());
-        _rightPupil.BeginAnimation(OpacityProperty, animation.Clone());
-    }
+            tb = new TextBlock
+            {
+                FontFamily  = new FontFamily("Segoe UI"),
+                FontSize    = 13,
+                FontWeight  = FontWeights.SemiBold,
+                Foreground  = new SolidColorBrush(Color.FromRgb(0xE8, 0xE8, 0xE8)),
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth    = 160,
+            };
+            var border = new Border
+            {
+                Background      = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x22)),
+                BorderBrush     = new SolidColorBrush(Color.FromRgb(0x3A, 0x3A, 0x3A)),
+                BorderThickness = new Thickness(1),
+                CornerRadius    = new CornerRadius(12, 12, 2, 12),
+                Padding         = new Thickness(12, 8, 12, 8),
+                Child           = tb,
+                Effect          = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    BlurRadius   = 14, ShadowDepth = 3, Opacity = 0.55,
+                    Color        = Colors.Black, Direction = 270
+                },
+            };
+            return border;
+        }
 
-    private void RandomMicroAction()
-    {
-        Play(_random.Next(6) switch
+        // ── Positioning ───────────────────────────────────────────
+
+        private void Reposition()
         {
-            0 => PandaMood.Curious,
-            1 => PandaMood.Happy,
-            2 => PandaMood.Thinking,
-            3 => PandaMood.Excited,
-            4 => PandaMood.Success,
-            _ => PandaMood.Idle
-        });
-    }
+            if (_host == null) return;
+            double ph = _host.ActualHeight, pw = _host.ActualWidth;
+            if (ph < 1 || pw < 1) return;
 
-    public void StartIdle()
-    {
-        _active?.Stop(this);
-        _active = new Storyboard();
+            // Panda — bottom-right corner
+            Canvas.SetLeft(_root, pw - W - Margin);
+            Canvas.SetTop (_root, ph - H - Margin);
 
-        var bob = new DoubleAnimation(-2.0, 2.0, TimeSpan.FromMilliseconds(1250))
+            // Bubble — above panda
+            var bw = _bubble.ActualWidth > 0 ? _bubble.ActualWidth : 180;
+            var bh = _bubble.ActualHeight > 0 ? _bubble.ActualHeight : 48;
+            Canvas.SetLeft(_bubble, pw - W - Margin - bw + W * 0.4);
+            Canvas.SetTop (_bubble, ph - H - Margin - bh - 8);
+        }
+
+        // ── Idle animations ───────────────────────────────────────
+
+        private double _bobPhase;
+
+        private void OnBounceTick(object sender, EventArgs e)
         {
-            AutoReverse = true,
-            RepeatBehavior = RepeatBehavior.Forever,
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-        };
-        Storyboard.SetTarget(bob, this);
-        Storyboard.SetTargetProperty(bob, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[2].(TranslateTransform.Y)"));
-        _active.Children.Add(bob);
+            _bobPhase += 0.055;
+            _bounce.Y  = Math.Sin(_bobPhase) * 2.2;
+        }
 
-        var breathe = new DoubleAnimation(1, 1.016, TimeSpan.FromMilliseconds(1500))
+        private void OnBlinkTick(object sender, EventArgs e)
         {
-            AutoReverse = true,
-            RepeatBehavior = RepeatBehavior.Forever,
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-        };
-        Storyboard.SetTarget(breathe, this);
-        Storyboard.SetTargetProperty(breathe, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"));
-        _active.Children.Add(breathe);
-        _active.Begin(this, true);
-    }
+            if (_blinking) return;
+            _blinking = true;
 
-    public void Play(PandaMood mood)
-    {
-        _active?.Stop(this);
-        _active = new Storyboard();
-        var duration = TimeSpan.FromMilliseconds(mood == PandaMood.Excited ? 720 : 480);
-        var y = mood switch
+            var close = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(60));
+            var open  = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(80));
+            open.BeginTime = TimeSpan.FromMilliseconds(90);
+            open.Completed += (_, __) =>
+            {
+                _blinking = false;
+                _blinkTimer.Interval = TimeSpan.FromSeconds(3 + new Random().NextDouble() * 2.5);
+            };
+
+            _leftBlink.BeginAnimation(UIElement.OpacityProperty, close);
+            _rightBlink.BeginAnimation(UIElement.OpacityProperty, close);
+            var openL = open.Clone(); var openR = open.Clone();
+            openR.Completed += (_, __) => { _blinking = false; };
+            _leftBlink.BeginAnimation(UIElement.OpacityProperty, openL);
+            _rightBlink.BeginAnimation(UIElement.OpacityProperty, openR);
+        }
+
+        // ── Mood helpers ──────────────────────────────────────────
+
+        private void SetMouth(string mood)
         {
-            PandaMood.Happy or PandaMood.Success => -14,
-            PandaMood.Excited => -22,
-            PandaMood.Update => -17,
-            PandaMood.Curious => -6,
-            PandaMood.Error => 1,
-            PandaMood.Sleep => 4,
-            _ => -4
-        };
+            double s = Scale;
+            _mouth.Data = ParseGeometry(mood switch
+            {
+                "happy"  => "M 42,86 Q 55,98 68,86",
+                "think"  => "M 47,89 Q 55,93 63,89",
+                "sad"    => "M 44,94 Q 55,86 66,94",
+                _        => "M 44,88 Q 55,96 66,88",
+            });
+        }
 
-        var bounce = new DoubleAnimation(0, y, duration)
+        private void SetBlush(bool on)
         {
-            AutoReverse = true,
-            EasingFunction = new BackEase { Amplitude = .30, EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(bounce, this);
-        Storyboard.SetTargetProperty(bounce, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[2].(TranslateTransform.Y)"));
-        _active.Children.Add(bounce);
+            var target = on ? 0.52 : 0.0;
+            _blushL.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(200)));
+            _blushR.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(200)));
+        }
 
-        var tilt = new DoubleAnimation(mood == PandaMood.Curious ? -7 : 0, mood == PandaMood.Curious ? 7 : 0, duration)
+        // ── Fade helpers ──────────────────────────────────────────
+
+        private static void FadeIn(UIElement el, double seconds)
         {
-            AutoReverse = true,
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-        };
-        Storyboard.SetTarget(tilt, this);
-        Storyboard.SetTargetProperty(tilt, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[1].(RotateTransform.Angle)"));
-        _active.Children.Add(tilt);
+            el.BeginAnimation(UIElement.OpacityProperty,
+                new DoubleAnimation(0, 1, TimeSpan.FromSeconds(seconds)));
+        }
 
-        var scale = new DoubleAnimation(1, mood == PandaMood.Excited ? 1.08 : 1.035, duration)
+        private static void FadeOut(UIElement el, double seconds, Action? onComplete = null)
         {
-            AutoReverse = true,
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
-        };
-        Storyboard.SetTarget(scale, this);
-        Storyboard.SetTargetProperty(scale, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"));
-        _active.Children.Add(scale);
+            var a = new DoubleAnimation(1, 0, TimeSpan.FromSeconds(seconds));
+            if (onComplete != null) a.Completed += (_, __) => onComplete();
+            el.BeginAnimation(UIElement.OpacityProperty, a);
+        }
 
-        _active.Completed += (_, _) => StartIdle();
-        _active.Begin(this, true);
-    }
-
-    public void StopAnimations()
-    {
-        _active?.Stop(this);
-        _blinkTimer.Stop();
-        _activityTimer.Stop();
+        private static Geometry ParseGeometry(string data) =>
+            Geometry.Parse(data);
     }
 }
